@@ -43,7 +43,7 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(255, 0, 0, 0.6);
+      background-color: rgba(255, 0, 0, 0.7);
       pointer-events: none;
       z-index: 15;
       opacity: 0;
@@ -278,8 +278,8 @@
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点変更<br>
-      【目標】街に徘徊する異形を避け、<span style="color:#ff3333">3つの鍵</span> を見つけて脱出せよ。<br>
-      モンスターに捕まるとゲームオーバーになります。
+      【目標】街を徘徊する異形を避け、<span style="color:#ff3333">3つの鍵</span> を見つけて脱出せよ。<br>
+      建物を回避しながら、モンスターに捕まらないように進んでください。
     </div>
   </div>
 
@@ -417,7 +417,7 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(450, this.ctx.currentTime);
         osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 2.5);
 
         gain.gain.setValueAtTime(1.0, this.ctx.currentTime);
@@ -527,6 +527,9 @@
 
     const bldgTexture = generateBuildingTexture();
 
+    // --- 【建物の当たり判定用データの保持】 ---
+    const buildingColliders = [];
+
     // マップ構築
     function buildWideCity() {
       const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.8 });
@@ -537,9 +540,20 @@
           if (Math.abs(x) < 8 && z > -50) continue;
 
           const h = 10 + (Math.abs(x * z) % 8);
-          const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), bldgMat);
-          bldg.position.set(x + (z % 4), h / 2, z);
+          const w = 16;
+          const d = 14;
+          const bldg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bldgMat);
+          const posX = x + (z % 4);
+          bldg.position.set(posX, h / 2, z);
           scene.add(bldg);
+
+          // 当たり判定用データとして登録 (Bounding Box)
+          buildingColliders.push({
+            minX: posX - w / 2,
+            maxX: posX + w / 2,
+            minZ: z - d / 2,
+            maxZ: z + d / 2
+          });
         }
       }
 
@@ -591,7 +605,7 @@
     }
     createMainSignAndDoor();
 
-    // 鍵の作成
+    // 鍵のモデル
     function createKey3DModel() {
       const keyGroup = new THREE.Group();
       const goldMat = new THREE.MeshStandardMaterial({
@@ -646,7 +660,7 @@
       });
     }
 
-    // --- モンスター共通モデル生成関数 ---
+    // モンスターモデル関数
     function createMonster(eyeColorHex = 0xff0000) {
       const group = new THREE.Group();
       const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
@@ -671,21 +685,17 @@
       return { group, head };
     }
 
-    // 1. 赤目モンスター（追跡型）
     const monster1 = createMonster(0xff0000);
     monster1.group.position.set(0, 0, -65);
     scene.add(monster1.group);
 
-    // 【新規追加】2. 緑目モンスター（巡回型）
     const monster2 = createMonster(0x00ff44);
     monster2.group.position.set(-30, 0, -15);
     scene.add(monster2.group);
 
-    // 巡回ルートの設定
     let patrolTargetX = 30;
     const patrolSpeed = 2.8;
 
-    // フラッシュ機能
     function triggerRedFlash() {
       flashOverlay.style.opacity = '1';
       setTimeout(() => {
@@ -707,6 +717,10 @@
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
     let isSprinting = false;
     let heartbeatTimer = 0;
+
+    // ジャンプアクションアニメーション変数
+    let isJumpingOver = false;
+    let jumpTime = 0;
 
     function showMessage(msg) {
       msgLog.textContent = msg;
@@ -735,6 +749,9 @@
       isChasing = false;
       isGameOver = false;
       isCleared = false;
+      isJumpingOver = false;
+      jumpTime = 0;
+
       keysCollectedCount = 0;
       stamina = maxStamina;
       isExhausted = false;
@@ -754,7 +771,6 @@
     retryBtn.addEventListener('click', returnToTitle);
     clearTitleBtn.addEventListener('click', returnToTitle);
 
-    // ポインターロック連携
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement === document.body && !isGameOver && !isCleared) {
         isPlaying = true;
@@ -771,7 +787,6 @@
       }
     });
 
-    // 視点移動
     document.addEventListener('mousemove', (e) => {
       if (!isPlaying || isGameOver || isCleared) return;
 
@@ -782,7 +797,6 @@
       camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
     });
 
-    // キーボード操作
     document.addEventListener('keydown', (e) => {
       if (isGameOver) {
         if (e.code === 'Space' || e.code === 'Enter') returnToTitle();
@@ -814,28 +828,38 @@
       if (e.target !== retryBtn) returnToTitle();
     });
 
-    // モンスター捕獲時の処理
+    // --- 【建物の衝突判定ロジック】 ---
+    function checkBuildingCollision(newX, newZ) {
+      const radius = 0.6; // プレイヤーの当たり判定半径
+      for (let i = 0; i < buildingColliders.length; i++) {
+        const b = buildingColliders[i];
+        if (newX + radius > b.minX && newX - radius < b.maxX &&
+            newZ + radius > b.minZ && newZ - radius < b.maxZ) {
+          return true; // 衝突検出
+        }
+      }
+      return false;
+    }
+
+    // --- 【強化】ジャンプアクション風ゲームオーバー演出 ---
     function triggerGameOver(caughtMonsterGroup) {
       if (isGameOver || isCleared) return;
       isGameOver = true;
       isPlaying = false;
       document.exitPointerLock();
 
-      triggerRedFlash();
       audio.stopBGM();
       audio.playGameoverSound();
+      triggerRedFlash();
 
-      // 捕まえてきたモンスターをプレイヤーの正面に引き寄せて視線固定
+      // モンスターをすぐ眼前に配置
       caughtMonsterGroup.position.copy(player.position);
       caughtMonsterGroup.position.z -= 0.8;
-      camera.lookAt(caughtMonsterGroup.position.x, 2.5, caughtMonsterGroup.position.z);
 
-      setTimeout(() => {
-        gameoverOverlay.style.display = 'flex';
-      }, 400);
+      isJumpingOver = true;
+      jumpTime = 0;
     }
 
-    // クリア処理
     function triggerGameClear() {
       if (isCleared || isGameOver) return;
       isCleared = true;
@@ -855,7 +879,7 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // 鍵のアニメーション
+      // 鍵アニメーション
       keys.forEach(k => {
         if (!k.collected) {
           k.mesh.rotation.y += delta * 2.5;
@@ -864,8 +888,22 @@
         }
       });
 
+      // 【捕まった際のジャンプ・驚かせカメラアクション】
+      if (isJumpingOver) {
+        jumpTime += delta * 5;
+        // 上に跳ね上がりながら下（モンスターの顔）を見下ろすような激しいシェイク
+        player.position.y = 1.6 + Math.sin(jumpTime) * 1.2;
+        camera.rotation.x = -Math.PI / 3 + (Math.random() - 0.5) * 0.2;
+        camera.rotation.z = (Math.random() - 0.5) * 0.3;
+
+        if (jumpTime > Math.PI) {
+          isJumpingOver = false;
+          gameoverOverlay.style.display = 'flex';
+        }
+      }
+
       if (isPlaying && !isGameOver && !isCleared) {
-        // 移動とスタミナ
+        // 移動計算
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         let speedMultiplier = 1.0;
 
@@ -889,6 +927,9 @@
         staminaBar.style.width = `${(stamina / maxStamina) * 100}%`;
 
         const moveSpeed = 3.6 * speedMultiplier * delta;
+        const oldX = player.position.x;
+        const oldZ = player.position.z;
+
         if (moveForward) player.translateZ(-moveSpeed);
         if (moveBackward) player.translateZ(moveSpeed);
         if (moveLeft) player.translateX(-moveSpeed);
@@ -896,6 +937,24 @@
 
         player.position.y = 1.6;
 
+        // 【建物当たり判定チェック】
+        if (checkBuildingCollision(player.position.x, player.position.z)) {
+          // X軸移動だけ試す
+          if (!checkBuildingCollision(player.position.x, oldZ)) {
+            player.position.z = oldZ;
+          } 
+          // Z軸移動だけ試す
+          else if (!checkBuildingCollision(oldX, player.position.z)) {
+            player.position.x = oldX;
+          } 
+          // 両方だめなら元の位置に戻す（壁に引っかかる）
+          else {
+            player.position.x = oldX;
+            player.position.z = oldZ;
+          }
+        }
+
+        // 境界チェック
         player.position.x = Math.max(-42.0, Math.min(42.0, player.position.x));
         player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
@@ -926,7 +985,7 @@
           }
         }
 
-        // --- モンスター1（追跡型）の挙動 ---
+        // モンスター1（追跡型）
         const dist1 = player.position.distanceTo(monster1.group.position);
 
         if (player.position.z < 10 && !isChasing) {
@@ -955,11 +1014,10 @@
           if (dist1 < 1.5) triggerGameOver(monster1.group);
         }
 
-        // --- 【新規追加】モンスター2（巡回型）のAI挙動 ---
+        // モンスター2（巡回型）
         const dist2 = player.position.distanceTo(monster2.group.position);
         monster2.head.position.x = Math.sin(time * 20) * 0.05;
 
-        // 左右へ巡回
         if (monster2.group.position.x < patrolTargetX) {
           monster2.group.position.x += patrolSpeed * delta;
           monster2.group.rotation.y = Math.PI / 2;
