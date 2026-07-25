@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Extended Survival Horror</title>
+  <title>死の市 - Hard & Wide Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -34,7 +34,7 @@
         transparent 1px,
         transparent 2px
       );
-      box-shadow: inset 0 0 180px rgba(0,0,0,0.95);
+      box-shadow: inset 0 0 150px rgba(0,0,0,0.95);
       z-index: 10;
     }
 
@@ -50,28 +50,28 @@
       display: none;
     }
 
-    /* UI（鍵カウント＆スタミナゲージ） */
+    /* UI */
     #ui {
       position: absolute;
       top: 20px; left: 20px;
       color: #ddd;
       z-index: 20;
       pointer-events: none;
-      font-size: 14px;
+      font-size: 13px;
       letter-spacing: 2px;
       display: none;
     }
 
     .hud-box {
-      background: rgba(0, 0, 0, 0.65);
-      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 14px;
       border: 1px solid #444;
       border-left: 4px solid #b30000;
       margin-bottom: 8px;
     }
 
     #stamina-bar-bg {
-      width: 160px;
+      width: 150px;
       height: 8px;
       background: #222;
       border: 1px solid #555;
@@ -249,12 +249,12 @@
 
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- ESCAPE THE CITY -</div>
+    <div class="subtitle">- HARD & WIDE STREETS -</div>
     <button class="btn-start" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
-      [W/A/S/D] 移動 | [Shift] ダッシュ（スタミナ消費） | [マウス] 視点変更<br>
-      【クリア目標】街に眠る <span style="color:#ff3333">3つの鍵</span> を拾い、最深部の扉から脱出せよ。<br>
-      ※背後から追ってくる「存在」に捕まるとゲームオーバー。
+      [W/A/S/D] 移動 | [Shift] ダッシュ（スタミナ注意） | [マウス] 視点変更<br>
+      【クリア目標】横に広がった広い街から <span style="color:#ff3333">3つの鍵</span> を探し、最深部から脱出せよ。<br>
+      ※高速で追ってくる「存在」に捕まるとゲームオーバー（タイトルへ戻ります）。
     </div>
   </div>
 
@@ -271,7 +271,7 @@
   <div id="canvas-container"></div>
 
   <script>
-    // --- 音声システム (Web Audio API) ---
+    // --- 音声システム ---
     class AudioSystem {
       constructor() {
         this.ctx = null;
@@ -286,7 +286,7 @@
         this.ctx = new AudioContext();
 
         this.gainNode = this.ctx.createGain();
-        this.gainNode.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        this.gainNode.gain.setValueAtTime(0.25, this.ctx.currentTime);
         this.gainNode.connect(this.ctx.destination);
       }
 
@@ -306,7 +306,7 @@
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(130, this.ctx.currentTime);
+        filter.frequency.setValueAtTime(120, this.ctx.currentTime);
 
         osc1.connect(filter);
         osc2.connect(filter);
@@ -323,17 +323,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(55, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 0.18);
+        osc.frequency.setValueAtTime(60, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 0.15);
 
         gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.18);
+        osc.stop(this.ctx.currentTime + 0.15);
       }
 
       playKeyPickup() {
@@ -342,17 +342,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
-        osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.1); // E5
+        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08);
 
         gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.3);
+        osc.stop(this.ctx.currentTime + 0.25);
       }
 
       playGameoverSound() {
@@ -361,17 +361,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 2.0);
+        osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + 1.8);
 
-        gain.gain.setValueAtTime(0.9, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 2.0);
+        gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.8);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 2.0);
+        osc.stop(this.ctx.currentTime + 1.8);
       }
 
       stopBGM() {
@@ -398,12 +398,12 @@
     const gameoverOverlay = document.getElementById('gameover-overlay');
     const clearOverlay = document.getElementById('clear-overlay');
 
-    // --- 3Dグラフィック環境 ---
+    // --- 3Dグラフィック環境（軽量化設定） ---
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020205);
-    scene.fog = new THREE.FogExp2(0x020205, 0.045);
+    scene.fog = new THREE.FogExp2(0x020205, 0.04);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
     camera.rotation.order = 'YXZ';
 
     const player = new THREE.Object3D();
@@ -411,151 +411,97 @@
     player.add(camera);
     scene.add(player);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); // ピクセル比を抑えて動作を軽量化
     container.appendChild(renderer.domElement);
 
-    // ライティング
-    const ambientLight = new THREE.AmbientLight(0x1a2035, 0.6);
+    // ライティング（軽量化のためPointLightを整理）
+    const ambientLight = new THREE.AmbientLight(0x222a3d, 0.8);
     scene.add(ambientLight);
 
-    const moonLight = new THREE.DirectionalLight(0x4466aa, 0.5);
+    const moonLight = new THREE.DirectionalLight(0x4466aa, 0.4);
     moonLight.position.set(20, 50, 20);
-    moonLight.castShadow = true;
     scene.add(moonLight);
 
-    const flashlight = new THREE.SpotLight(0xfff3d6, 4.5, 28, Math.PI / 4, 0.4, 1);
+    const flashlight = new THREE.SpotLight(0xfff3d6, 4.0, 26, Math.PI / 4, 0.4, 1);
     camera.add(flashlight);
     flashlight.position.set(0, 0, 0);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // 道路（アスファルトの質感）
-    const floorGeo = new THREE.PlaneGeometry(80, 160);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.95 });
+    // 床（幅180に拡大：横方向へ広大化）
+    const floorGeo = new THREE.PlaneGeometry(180, 160);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.9 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
     scene.add(floor);
 
-    // --- リアルな窓テクスチャの動的生成 ---
+    // テクスチャ生成
     function generateBuildingTexture() {
       const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 512;
+      canvas.width = 128; canvas.height = 256;
       const ctx = canvas.getContext('2d');
 
       ctx.fillStyle = '#121216';
-      ctx.fillRect(0, 0, 256, 512);
+      ctx.fillRect(0, 0, 128, 256);
 
-      // 窓を描く
-      const cols = 4;
-      const rows = 12;
-      const padX = 20; const padY = 15;
-      const w = (256 - padX * (cols + 1)) / cols;
-      const h = (512 - padY * (rows + 1)) / rows;
+      const cols = 3; const rows = 8;
+      const padX = 12; const padY = 10;
+      const w = (128 - padX * (cols + 1)) / cols;
+      const h = (256 - padY * (rows + 1)) / rows;
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const x = padX + c * (w + padX);
           const y = padY + r * (h + padY);
 
-          // 一部の窓だけ灯りが点いている
-          if (Math.random() < 0.22) {
+          if (Math.random() < 0.2) {
             ctx.fillStyle = Math.random() < 0.5 ? '#ffe082' : '#80d8ff';
           } else {
             ctx.fillStyle = '#08080c';
           }
           ctx.fillRect(x, y, w, h);
-          ctx.strokeStyle = '#000';
-          ctx.strokeRect(x, y, w, h);
         }
       }
       return new THREE.CanvasTexture(canvas);
     }
 
     const bldgTexture = generateBuildingTexture();
-    bldgTexture.wrapS = THREE.RepeatWrapping;
-    bldgTexture.wrapT = THREE.RepeatWrapping;
 
-    // --- リアルな建物・街灯の生成 ---
-    function buildRealCity() {
-      const bldgMat = new THREE.MeshStandardMaterial({
-        map: bldgTexture,
-        roughness: 0.7,
-        metalness: 0.1
-      });
+    // --- マップ生成（横方向X: -45 ～ 45 まで広い街並み） ---
+    function buildWideCity() {
+      const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.8 });
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x222228 });
 
-      const poleMat = new THREE.MeshStandardMaterial({ color: 0x222228, metalness: 0.8, roughness: 0.3 });
-      const lampGlassMat = new THREE.MeshBasicMaterial({ color: 0xffd9aa });
+      // 建物を横にも配置
+      for (let z = -70; z <= 50; z += 18) {
+        for (let x = -45; x <= 45; x += 30) {
+          if (Math.abs(x) < 8 && z > -50) continue; // 中央メイン通りを確保
 
-      for (let z = -70; z <= 50; z += 16) {
-        // 左側のビル
-        const leftH = 12 + (Math.abs(z * 3) % 8);
-        const leftBldg = new THREE.Mesh(new THREE.BoxGeometry(12, leftH, 12), bldgMat);
-        leftBldg.position.set(-14, leftH / 2, z);
-        leftBldg.castShadow = true;
-        leftBldg.receiveShadow = true;
-        scene.add(leftBldg);
-
-        // ビル屋上の構造物（受水槽や室外機風の箱）
-        const roofBox = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 3), poleMat);
-        roofBox.position.set(-14, leftH + 1, z);
-        scene.add(roofBox);
-
-        // 右側のビル
-        const rightH = 10 + (Math.abs(z * 5) % 10);
-        const rightBldg = new THREE.Mesh(new THREE.BoxGeometry(12, rightH, 12), bldgMat);
-        rightBldg.position.set(14, rightH / 2, z);
-        rightBldg.castShadow = true;
-        rightBldg.receiveShadow = true;
-        scene.add(rightBldg);
+          const h = 10 + (Math.abs(x * z) % 8);
+          const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), bldgMat);
+          bldg.position.set(x + (z % 4), h / 2, z);
+          scene.add(bldg);
+        }
       }
 
-      // リアルな街灯（アーム構造付き）
-      for (let z = -60; z <= 40; z += 20) {
-        const createLamp = (x, zPos, dir) => {
-          const group = new THREE.Group();
+      // 街灯（間引きして軽量化）
+      for (let z = -60; z <= 40; z += 25) {
+        [-18, 0, 18].forEach(xPos => {
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 7, 6), poleMat);
+          pole.position.set(xPos, 3.5, z);
+          scene.add(pole);
 
-          // 支柱
-          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 7.5, 12), poleMat);
-          pole.position.y = 3.75;
-          group.add(pole);
-
-          // 横アーム
-          const arm = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.08), poleMat);
-          arm.position.set(dir * 0.5, 7.2, 0);
-          group.add(arm);
-
-          // ランプのかさ＆電球
-          const head = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.2, 8), poleMat);
-          head.position.set(dir * 1.0, 7.1, 0);
-          group.add(head);
-
-          const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), lampGlassMat);
-          bulb.position.set(dir * 1.0, 6.95, 0);
-          group.add(bulb);
-
-          // 光源
-          const light = new THREE.PointLight(0xffb84d, 1.4, 14);
-          light.position.set(dir * 1.0, 6.8, 0);
-          light.castShadow = true;
-          group.add(light);
-
-          group.position.set(x, 0, zPos);
-          scene.add(group);
-        };
-
-        createLamp(-6.5, z, 1);
-        createLamp(6.5, z + 10, -1);
+          const light = new THREE.PointLight(0xffb84d, 1.2, 12);
+          light.position.set(xPos, 6.5, z);
+          scene.add(light);
+        });
       }
     }
-    buildRealCity();
+    buildWideCity();
 
-    // 街の最深部：脱出の扉と看板
-    let signLight;
+    // 街の最深部：脱出扉
     let exitDoor;
     function createMainSignAndDoor() {
       const canvas = document.createElement('canvas');
@@ -569,51 +515,47 @@
       ctx.fillText('死 の 市', 256, 150);
 
       const texture = new THREE.CanvasTexture(canvas);
-      const geo = new THREE.PlaneGeometry(6, 3);
-      const mat = new THREE.MeshBasicMaterial({ map: texture });
-      const signMesh = new THREE.Mesh(geo, mat);
+      const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshBasicMaterial({ map: texture }));
       signMesh.position.set(0, 5, -55);
       scene.add(signMesh);
 
-      signLight = new THREE.PointLight(0xff0000, 2.5, 15);
+      const signLight = new THREE.PointLight(0xff0000, 2.0, 12);
       signLight.position.set(0, 5, -53);
       scene.add(signLight);
 
-      // 脱出用扉
-      const doorGeo = new THREE.BoxGeometry(3, 5, 0.2);
-      const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8, roughness: 0.2 });
+      const doorGeo = new THREE.BoxGeometry(3.5, 5, 0.2);
+      const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
       exitDoor = new THREE.Mesh(doorGeo, doorMat);
       exitDoor.position.set(0, 2.5, -62);
       scene.add(exitDoor);
 
-      // 扉の上の警告灯
       const doorLight = new THREE.PointLight(0x00ff88, 1.0, 8);
       doorLight.position.set(0, 5.2, -61);
       scene.add(doorLight);
     }
     createMainSignAndDoor();
 
-    // --- キーアイテム（収集要素） ---
+    // --- キーアイテム（横の広いマップに配置） ---
     const keys = [];
     const keyPositions = [
-      new THREE.Vector3(-4.5, 0.8, 10),
-      new THREE.Vector3(4.5, 0.8, -15),
-      new THREE.Vector3(-4.0, 0.8, -40)
+      new THREE.Vector3(-32, 0.8, 10),  // 横奥（左）
+      new THREE.Vector3(32, 0.8, -10),  // 横奥（右）
+      new THREE.Vector3(-15, 0.8, -42)  // 最深部付近（左）
     ];
 
     function spawnKeys() {
       keys.forEach(k => scene.remove(k.mesh));
       keys.length = 0;
 
-      const keyGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 16);
-      const keyMat = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0x660000, roughness: 0.3 });
+      const keyGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 12);
+      const keyMat = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0x880000 });
 
       keyPositions.forEach(pos => {
         const mesh = new THREE.Mesh(keyGeo, keyMat);
         mesh.position.copy(pos);
         scene.add(mesh);
 
-        const pointLight = new THREE.PointLight(0xff0000, 1.2, 4);
+        const pointLight = new THREE.PointLight(0xff0000, 1.0, 4);
         pointLight.position.copy(pos);
         scene.add(pointLight);
 
@@ -625,13 +567,11 @@
     const monsterGroup = new THREE.Group();
     const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
 
-    const bodyGeo = new THREE.CylinderGeometry(0.25, 0.12, 2.8, 8);
-    const body = new THREE.Mesh(bodyGeo, monsterMat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.12, 2.8, 8), monsterMat);
     body.position.y = 1.4;
     monsterGroup.add(body);
 
-    const headGeo = new THREE.SphereGeometry(0.38, 8, 8);
-    const head = new THREE.Mesh(headGeo, monsterMat);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), monsterMat);
     head.position.y = 2.9;
     monsterGroup.add(head);
 
@@ -647,7 +587,7 @@
     monsterGroup.position.set(0, 0, -65);
     scene.add(monsterGroup);
 
-    // --- プレイヤーステータス ＆ 操作管理 ---
+    // --- ゲーム状態管理 ---
     let isPlaying = false;
     let isChasing = false;
     let isGameOver = false;
@@ -722,7 +662,7 @@
       camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
     });
 
-    // キーボード操作
+    // キー操作
     document.addEventListener('keydown', (e) => {
       switch (e.code) {
         case 'KeyW': moveForward = true; break;
@@ -745,7 +685,7 @@
       }
     });
 
-    // ゲームオーバー処理
+    // 【即時ゲームオーバー ＆ タイトル画面戻り処理】
     function triggerGameOver() {
       if (isGameOver || isCleared) return;
       isGameOver = true;
@@ -755,22 +695,24 @@
       audio.stopBGM();
       audio.playGameoverSound();
 
+      // モンスターを目の前へ配置
       monsterGroup.position.copy(player.position);
       monsterGroup.position.z -= 0.8;
       camera.lookAt(monsterGroup.position.x, 2.5, monsterGroup.position.z);
 
       gameoverOverlay.style.display = 'flex';
 
+      // 2.5秒後にタイトル画面へ復帰
       setTimeout(() => {
         gameoverOverlay.style.display = 'none';
         titleScreen.style.display = 'flex';
         crosshair.style.display = 'none';
         ui.style.display = 'none';
         resetGame();
-      }, 3500);
+      }, 2500);
     }
 
-    // ゲームクリア処理
+    // クリア処理
     function triggerGameClear() {
       if (isCleared || isGameOver) return;
       isCleared = true;
@@ -786,7 +728,7 @@
         crosshair.style.display = 'none';
         ui.style.display = 'none';
         resetGame();
-      }, 4000);
+      }, 3500);
     }
 
     // --- アニメーション＆メイン更新ループ ---
@@ -798,29 +740,28 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // 鍵の回転アニメーション
+      // 鍵の回転
       keys.forEach(k => {
         if (!k.collected) {
           k.mesh.rotation.y += delta * 2.0;
-          k.mesh.position.y = k.mesh.position.y = 0.8 + Math.sin(time * 3) * 0.1;
         }
       });
 
       if (isPlaying && !isGameOver && !isCleared) {
-        // --- スタミナ ＆ 移動処理 ---
+        // --- スタミナ ＆ 移動処理（難易度高め） ---
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         let speedMultiplier = 1.0;
 
         if (isSprinting && isMoving && !isExhausted) {
-          speedMultiplier = 1.85; // ダッシュ速度
-          stamina -= 35 * delta;
+          speedMultiplier = 1.75; // ダッシュ速度
+          stamina -= 50 * delta; // スタミナ消費が早い
           if (stamina <= 0) {
             stamina = 0;
             isExhausted = true;
             staminaBar.style.backgroundColor = '#ff3333';
           }
         } else {
-          stamina += 20 * delta;
+          stamina += 15 * delta; // 回復が遅い
           if (stamina >= maxStamina) {
             stamina = maxStamina;
             isExhausted = false;
@@ -828,11 +769,9 @@
           }
         }
 
-        // UIのスタミナ更新
-        const staminaPct = (stamina / maxStamina) * 100;
-        staminaBar.style.width = `${staminaPct}%`;
+        staminaBar.style.width = `${(stamina / maxStamina) * 100}%`;
 
-        const moveSpeed = 3.3 * speedMultiplier * delta;
+        const moveSpeed = 3.6 * speedMultiplier * delta;
         if (moveForward) player.translateZ(-moveSpeed);
         if (moveBackward) player.translateZ(moveSpeed);
         if (moveLeft) player.translateX(-moveSpeed);
@@ -840,20 +779,13 @@
 
         player.position.y = 1.6;
 
-        // 移動制限
-        player.position.x = Math.max(-6.0, Math.min(6.0, player.position.x));
+        // 横マップ制限（X: -42 ～ 42 に大幅拡大）
+        player.position.x = Math.max(-42.0, Math.min(42.0, player.position.x));
         player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
-        // 懐中電灯ブレ
-        if (isMoving) {
-          const bobFreq = isSprinting ? 14 : 9;
-          flashlight.position.y = Math.sin(time * bobFreq) * 0.025;
-          flashlight.position.x = Math.cos(time * (bobFreq / 2)) * 0.025;
-        }
-
-        // --- 鍵取得の当たり判定 ---
+        // 鍵取得の判定
         keys.forEach(k => {
-          if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.4) {
+          if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.5) {
             k.collected = true;
             scene.remove(k.mesh);
             scene.remove(k.light);
@@ -864,13 +796,13 @@
             if (keysCollectedCount < keyPositions.length) {
               showMessage(`鍵を手に入れた (${keysCollectedCount}/${keyPositions.length})`);
             } else {
-              showMessage('すべての鍵が集まった！最深部の扉から脱出せよ！');
+              showMessage('すべての鍵が集まった！中央最深部の扉から脱出せよ！');
             }
           }
         });
 
-        // --- 脱出判定 ---
-        if (player.position.z < -60) {
+        // 脱出判定
+        if (player.position.z < -60 && Math.abs(player.position.x) < 4) {
           if (keysCollectedCount >= keyPositions.length) {
             triggerGameClear();
           } else {
@@ -878,42 +810,39 @@
           }
         }
 
-        // --- モンスターAI ---
+        // --- モンスターAI（スピード大幅アップで難易度高） ---
         const distanceToMonster = player.position.distanceTo(monsterGroup.position);
 
-        if (player.position.z < 5 && !isChasing) {
+        if (player.position.z < 10 && !isChasing) {
           isChasing = true;
-          showMessage('何かが目覚めた...逃げろ！');
+          showMessage('何かが目覚めた...！速い、逃げろ！');
         }
 
         if (isChasing) {
           monsterGroup.lookAt(player.position.x, 0, player.position.z);
 
           head.position.x = Math.sin(time * 35) * 0.06;
-          head.position.z = Math.cos(time * 35) * 0.06;
 
           heartbeatTimer += delta;
-          const heartbeatInterval = Math.max(0.22, distanceToMonster * 0.055);
+          const heartbeatInterval = Math.max(0.18, distanceToMonster * 0.045);
           if (heartbeatTimer > heartbeatInterval) {
             audio.playHeartbeat();
             heartbeatTimer = 0;
           }
 
-          const chaseSpeed = 3.15 * delta;
+          // 難易度強化：プレイヤーの通常移動よりも速いスピードで追跡
+          const chaseSpeed = 3.8 * delta;
           const chaseDir = new THREE.Vector3().subVectors(player.position, monsterGroup.position);
           chaseDir.y = 0;
           chaseDir.normalize();
 
           monsterGroup.position.addScaledVector(chaseDir, chaseSpeed);
 
-          if (distanceToMonster < 1.4) {
+          // 接触＝ゲームオーバー
+          if (distanceToMonster < 1.5) {
             triggerGameOver();
           }
         }
-      }
-
-      if (signLight) {
-        signLight.intensity = Math.random() > 0.06 ? 2.5 : 0.2;
       }
 
       renderer.render(scene, camera);
