@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Chance Time & Horror Edition</title>
+  <title>死の市 - Custom Opening & Horror Stream Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -461,7 +461,7 @@
   <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- CHANCE TIME EDITION -</div>
+    <div class="subtitle">- HIGH-ENERGY STREAM ANTHEM EDITION -</div>
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点 | [Esc] ポーズ<br>
@@ -504,8 +504,8 @@
     bgmVolSlider.addEventListener('input', (e) => { bgmVolume = e.target.value / 100; audio.updateVolumes(); });
     seVolSlider.addEventListener('input', (e) => { seVolume = e.target.value / 100; audio.updateVolumes(); });
 
-    // Audio Engine
-    class HorrorMusicEngine {
+    // 新・ハイエネルギー配信用カスタム音楽エンジン (High-Energy Stream Anthem Engine)
+    class StreamerAnthemEngine {
       constructor() {
         this.ctx = null;
         this.isPlaying = false;
@@ -513,8 +513,11 @@
         this.bgmNode = null;
         this.seNode = null;
         this.chaseGain = null;
-        this.musicInterval = null;
-        this.notes = [130.81, 155.56, 174.61, 185.00, 196.00, 246.94, 261.63, 311.13];
+        this.timer = null;
+        this.stepCount = 0;
+        // マイナーペンタトニック＋アグレッシブなゲームミュージック音階
+        this.bassNotes = [55.00, 65.41, 73.42, 82.41]; // A1, C2, D2, E2
+        this.leadNotes = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; 
       }
 
       init() {
@@ -546,73 +549,119 @@
         if (this.ctx.state === 'suspended') this.ctx.resume();
         if (this.isPlaying) return;
         this.isPlaying = true;
+        this.stepCount = 0;
 
+        // 追跡用パルスゲインの初期化
         const now = this.ctx.currentTime;
-
-        const bassOsc = this.ctx.createOscillator();
-        bassOsc.type = 'sine';
-        bassOsc.frequency.setValueAtTime(65.41, now);
-
-        const bassFilter = this.ctx.createBiquadFilter();
-        bassFilter.type = 'lowpass';
-        bassFilter.frequency.setValueAtTime(200, now);
-
-        bassOsc.connect(bassFilter);
-        bassFilter.connect(this.bgmNode);
-        bassOsc.start();
-
         this.chaseGain = this.ctx.createGain();
         this.chaseGain.gain.setValueAtTime(0.0, now);
         this.chaseGain.connect(this.seNode);
 
         const chaseOsc = this.ctx.createOscillator();
-        chaseOsc.type = 'triangle';
-        chaseOsc.frequency.setValueAtTime(50.0, now);
-
+        chaseOsc.type = 'sawtooth';
+        chaseOsc.frequency.setValueAtTime(45.0, now);
         chaseOsc.connect(this.chaseGain);
         chaseOsc.start();
 
-        this.startMelodySequence();
+        this.startSequencer();
       }
 
-      startMelodySequence() {
-        const step = () => {
+      startSequencer() {
+        const tempoMs = 145; // 高速で疾走感のあるBPM
+
+        const loop = () => {
           if (!this.isPlaying) return;
-          this.playPianoNote();
-          const nextTime = Math.random() * 800 + 400;
-          this.musicInterval = setTimeout(step, nextTime);
+          const now = this.ctx.currentTime;
+
+          // 1. 16分音符ごとのキック・ベース刻み (ドライヴ感のあるリズム)
+          if (this.stepCount % 2 === 0) {
+            this.playKick(now);
+          }
+          if (this.stepCount % 4 === 2) {
+            this.playBassNote(now);
+          }
+
+          // 2. メロディーフレーズ (ゲーム配信のオープニングらしく盛り上がる高音リフ)
+          if (this.stepCount % 4 === 0 || this.stepCount % 4 === 3) {
+            this.playLeadNote(now);
+          }
+
+          this.stepCount = (this.stepCount + 1) % 16;
+          this.timer = setTimeout(loop, tempoMs);
         };
-        step();
+        loop();
       }
 
-      playPianoNote() {
-        if (!this.ctx || !this.isPlaying) return;
-        const now = this.ctx.currentTime;
-
+      playKick(now) {
+        if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'triangle';
-        const freq = this.notes[Math.floor(Math.random() * this.notes.length)];
-        osc.frequency.setValueAtTime(freq, now);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(130, now);
+        osc.frequency.exponentialRampYToValueAtTime ? osc.frequency.exponentialRampToValueAtTime(35, now + 0.12) : osc.frequency.linearRampToValueAtTime(35, now + 0.12);
 
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
         osc.connect(gain);
         gain.connect(this.bgmNode);
 
         osc.start(now);
-        osc.stop(now + 2.0);
+        osc.stop(now + 0.12);
+      }
+
+      playBassNote(now) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        const note = this.bassNotes[Math.floor((this.stepCount / 4) % this.bassNotes.length)];
+        osc.frequency.setValueAtTime(note, now);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, now);
+        filter.frequency.linearRampToValueAtTime(1200, now + 0.1);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.bgmNode);
+
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playLeadNote(now) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'square';
+        const note = this.leadNotes[Math.floor(Math.random() * this.leadNotes.length)];
+        osc.frequency.setValueAtTime(note, now);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.bgmNode);
+
+        osc.start(now);
+        osc.stop(now + 0.18);
       }
 
       updateChaseVolume(distance) {
         if (!this.ctx || !this.isPlaying || !this.chaseGain) return;
-        const maxDist = 32.0;
+        const maxDist = 30.0;
         let volume = 0;
         if (distance < maxDist) {
           const factor = 1 - (distance / maxDist);
-          volume = Math.pow(factor, 1.2) * 0.8;
+          volume = Math.pow(factor, 1.4) * 0.9;
         }
         this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.05);
       }
@@ -624,17 +673,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(80, now);
-        osc.frequency.exponentialRampToValueAtTime(15, now + 0.16);
+        osc.frequency.setValueAtTime(90, now);
+        osc.frequency.exponentialRampToValueAtTime(20, now + 0.15);
 
-        gain.gain.setValueAtTime(0.85 * volumeRatio, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        gain.gain.setValueAtTime(0.8 * volumeRatio, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 0.16);
+        osc.stop(now + 0.15);
       }
 
       playKeyPickup() {
@@ -643,18 +692,18 @@
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now);
-        osc.frequency.setValueAtTime(783.99, now + 0.1);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(880.00, now + 0.08); // A5
 
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 0.4);
+        osc.stop(now + 0.35);
       }
 
       playGameoverSound() {
@@ -664,27 +713,27 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(180, now);
-        osc.frequency.exponentialRampToValueAtTime(20, now + 1.5);
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 1.2);
 
         gain.gain.setValueAtTime(0.7, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 1.5);
+        osc.stop(now + 1.2);
       }
 
       stop() {
         if (!this.isPlaying) return;
         this.isPlaying = false;
-        if (this.musicInterval) clearTimeout(this.musicInterval);
+        if (this.timer) clearTimeout(this.timer);
       }
     }
 
-    const audio = new HorrorMusicEngine();
+    const audio = new StreamerAnthemEngine();
 
     // DOM Elements
     const container = document.getElementById('canvas-container');
