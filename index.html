@@ -38,6 +38,18 @@
       z-index: 10;
     }
 
+    /* 被弾・死亡時の赤フラッシュ */
+    #flash-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(255, 0, 0, 0.6);
+      pointer-events: none;
+      z-index: 15;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+
     #crosshair {
       position: absolute;
       top: 50%; left: 50%;
@@ -167,7 +179,7 @@
       text-align: center;
     }
 
-    /* ゲームオーバー画面（完成版） */
+    /* ゲームオーバー画面 */
     #gameover-overlay {
       position: absolute;
       top: 0; left: 0;
@@ -243,6 +255,7 @@
 <body>
 
   <div id="vhs-overlay"></div>
+  <div id="flash-overlay"></div>
   <div id="crosshair"></div>
 
   <div id="ui">
@@ -265,12 +278,12 @@
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点変更<br>
-      【目標】横に広がる街から <span style="color:#ff3333">3つの鍵</span> を見つけ、最深部から脱出せよ。<br>
+      【目標】街に徘徊する異形を避け、<span style="color:#ff3333">3つの鍵</span> を見つけて脱出せよ。<br>
       モンスターに捕まるとゲームオーバーになります。
     </div>
   </div>
 
-  <!-- ゲームオーバー画面（追加・強化） -->
+  <!-- ゲームオーバー画面 -->
   <div id="gameover-overlay">
     <div class="go-title">G A M E   O V E R</div>
     <div class="go-sub">死の市に囚われ、あなたの意識は闇へと消えた...</div>
@@ -288,7 +301,7 @@
   <div id="canvas-container"></div>
 
   <script>
-    // --- 音声システム ---
+    // --- サウンドシステム ---
     class AudioSystem {
       constructor() {
         this.ctx = null;
@@ -303,7 +316,7 @@
         this.ctx = new AudioContext();
 
         this.gainNode = this.ctx.createGain();
-        this.gainNode.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        this.gainNode.gain.setValueAtTime(0.3, this.ctx.currentTime);
         this.gainNode.connect(this.ctx.destination);
       }
 
@@ -315,15 +328,15 @@
 
         const osc1 = this.ctx.createOscillator();
         osc1.type = 'sawtooth';
-        osc1.frequency.setValueAtTime(38, this.ctx.currentTime);
+        osc1.frequency.setValueAtTime(32, this.ctx.currentTime);
 
         const osc2 = this.ctx.createOscillator();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(39.5, this.ctx.currentTime);
+        osc2.frequency.setValueAtTime(34.5, this.ctx.currentTime);
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(120, this.ctx.currentTime);
+        filter.frequency.setValueAtTime(100, this.ctx.currentTime);
 
         osc1.connect(filter);
         osc2.connect(filter);
@@ -331,7 +344,33 @@
 
         osc1.start();
         osc2.start();
-        this.oscillators = [osc1, osc2];
+
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.setValueAtTime(200, this.ctx.currentTime);
+        noiseFilter.Q.setValueAtTime(3.0, this.ctx.currentTime);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+
+        whiteNoise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.gainNode);
+
+        whiteNoise.start();
+
+        this.oscillators = [osc1, osc2, whiteNoise];
       }
 
       playHeartbeat() {
@@ -340,17 +379,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(60, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(70, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(18, this.ctx.currentTime + 0.18);
 
-        gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.15);
+        osc.stop(this.ctx.currentTime + 0.18);
       }
 
       playKeyPickup() {
@@ -358,18 +397,18 @@
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
-        osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(880, this.ctx.currentTime + 0.1);
 
-        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.25);
+        osc.stop(this.ctx.currentTime + 0.4);
       }
 
       playGameoverSound() {
@@ -378,17 +417,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(350, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(25, this.ctx.currentTime + 2.0);
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 2.5);
 
-        gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 2.0);
+        gain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2.5);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 2.0);
+        osc.stop(this.ctx.currentTime + 2.5);
       }
 
       stopBGM() {
@@ -416,8 +455,9 @@
     const msgLog = document.getElementById('message-log');
     const gameoverOverlay = document.getElementById('gameover-overlay');
     const clearOverlay = document.getElementById('clear-overlay');
+    const flashOverlay = document.getElementById('flash-overlay');
 
-    // --- 3Dグラフィック環境（軽量設定） ---
+    // --- 3Dグラフィック環境 ---
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020205);
     scene.fog = new THREE.FogExp2(0x020205, 0.04);
@@ -551,7 +591,34 @@
     }
     createMainSignAndDoor();
 
-    // 鍵配置
+    // 鍵の作成
+    function createKey3DModel() {
+      const keyGroup = new THREE.Group();
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xffcc00,
+        metalness: 0.8,
+        roughness: 0.3,
+        emissive: 0x443300
+      });
+
+      const headGeo = new THREE.TorusGeometry(0.18, 0.04, 8, 16);
+      const headMesh = new THREE.Mesh(headGeo, goldMat);
+      headMesh.position.y = 0.4;
+      keyGroup.add(headMesh);
+
+      const shaftGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.5, 8);
+      const shaftMesh = new THREE.Mesh(shaftGeo, goldMat);
+      shaftMesh.position.y = 0.15;
+      keyGroup.add(shaftMesh);
+
+      const toothGeo = new THREE.BoxGeometry(0.12, 0.15, 0.03);
+      const toothMesh = new THREE.Mesh(toothGeo, goldMat);
+      toothMesh.position.set(0.06, 0.0, 0);
+      keyGroup.add(toothMesh);
+
+      return keyGroup;
+    }
+
     const keys = [];
     const keyPositions = [
       new THREE.Vector3(-32, 0.8, 10),
@@ -560,18 +627,18 @@
     ];
 
     function spawnKeys() {
-      keys.forEach(k => scene.remove(k.mesh));
+      keys.forEach(k => {
+        scene.remove(k.mesh);
+        if(k.light) scene.remove(k.light);
+      });
       keys.length = 0;
 
-      const keyGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 12);
-      const keyMat = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0x880000 });
-
       keyPositions.forEach(pos => {
-        const mesh = new THREE.Mesh(keyGeo, keyMat);
+        const mesh = createKey3DModel();
         mesh.position.copy(pos);
         scene.add(mesh);
 
-        const pointLight = new THREE.PointLight(0xff0000, 1.0, 4);
+        const pointLight = new THREE.PointLight(0xffaa00, 1.5, 5);
         pointLight.position.copy(pos);
         scene.add(pointLight);
 
@@ -579,29 +646,52 @@
       });
     }
 
-    // モンスター
-    const monsterGroup = new THREE.Group();
-    const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
+    // --- モンスター共通モデル生成関数 ---
+    function createMonster(eyeColorHex = 0xff0000) {
+      const group = new THREE.Group();
+      const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
 
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.12, 2.8, 8), monsterMat);
-    body.position.y = 1.4;
-    monsterGroup.add(body);
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.12, 2.8, 8), monsterMat);
+      body.position.y = 1.4;
+      group.add(body);
 
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), monsterMat);
-    head.position.y = 2.9;
-    monsterGroup.add(head);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), monsterMat);
+      head.position.y = 2.9;
+      group.add(head);
 
-    const eyeGeo = new THREE.SphereGeometry(0.065, 8, 8);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-    leftEye.position.set(-0.13, 2.95, -0.32);
-    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-    rightEye.position.set(0.13, 2.95, -0.32);
-    monsterGroup.add(leftEye);
-    monsterGroup.add(rightEye);
+      const eyeGeo = new THREE.SphereGeometry(0.065, 8, 8);
+      const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColorHex });
+      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+      leftEye.position.set(-0.13, 2.95, -0.32);
+      const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+      rightEye.position.set(0.13, 2.95, -0.32);
+      group.add(leftEye);
+      group.add(rightEye);
 
-    monsterGroup.position.set(0, 0, -65);
-    scene.add(monsterGroup);
+      return { group, head };
+    }
+
+    // 1. 赤目モンスター（追跡型）
+    const monster1 = createMonster(0xff0000);
+    monster1.group.position.set(0, 0, -65);
+    scene.add(monster1.group);
+
+    // 【新規追加】2. 緑目モンスター（巡回型）
+    const monster2 = createMonster(0x00ff44);
+    monster2.group.position.set(-30, 0, -15);
+    scene.add(monster2.group);
+
+    // 巡回ルートの設定
+    let patrolTargetX = 30;
+    const patrolSpeed = 2.8;
+
+    // フラッシュ機能
+    function triggerRedFlash() {
+      flashOverlay.style.opacity = '1';
+      setTimeout(() => {
+        flashOverlay.style.opacity = '0';
+      }, 300);
+    }
 
     // ゲーム状態
     let isPlaying = false;
@@ -637,7 +727,10 @@
       player.position.set(0, 1.6, 25);
       player.rotation.set(0, 0, 0);
       camera.rotation.set(0, 0, 0);
-      monsterGroup.position.set(0, 0, -65);
+      
+      monster1.group.position.set(0, 0, -65);
+      monster2.group.position.set(-30, 0, -15);
+      patrolTargetX = 30;
 
       isChasing = false;
       isGameOver = false;
@@ -717,31 +810,32 @@
       }
     });
 
-    // ゲームオーバー画面でのクリックで復帰
     gameoverOverlay.addEventListener('click', (e) => {
       if (e.target !== retryBtn) returnToTitle();
     });
 
-    // 【ゲームオーバー処理】
-    function triggerGameOver() {
+    // モンスター捕獲時の処理
+    function triggerGameOver(caughtMonsterGroup) {
       if (isGameOver || isCleared) return;
       isGameOver = true;
       isPlaying = false;
       document.exitPointerLock();
 
+      triggerRedFlash();
       audio.stopBGM();
       audio.playGameoverSound();
 
-      // モンスターを目の前に描画
-      monsterGroup.position.copy(player.position);
-      monsterGroup.position.z -= 0.8;
-      camera.lookAt(monsterGroup.position.x, 2.5, monsterGroup.position.z);
+      // 捕まえてきたモンスターをプレイヤーの正面に引き寄せて視線固定
+      caughtMonsterGroup.position.copy(player.position);
+      caughtMonsterGroup.position.z -= 0.8;
+      camera.lookAt(caughtMonsterGroup.position.x, 2.5, caughtMonsterGroup.position.z);
 
-      // ゲームオーバー画面表示（手動で戻るまで維持）
-      gameoverOverlay.style.display = 'flex';
+      setTimeout(() => {
+        gameoverOverlay.style.display = 'flex';
+      }, 400);
     }
 
-    // 【クリア処理】
+    // クリア処理
     function triggerGameClear() {
       if (isCleared || isGameOver) return;
       isCleared = true;
@@ -761,15 +855,17 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // 鍵アニメーション
+      // 鍵のアニメーション
       keys.forEach(k => {
         if (!k.collected) {
-          k.mesh.rotation.y += delta * 2.0;
+          k.mesh.rotation.y += delta * 2.5;
+          k.mesh.position.y = 0.8 + Math.sin(time * 3) * 0.1;
+          if (k.light) k.light.position.y = k.mesh.position.y;
         }
       });
 
       if (isPlaying && !isGameOver && !isCleared) {
-        // 移動・スタミナ
+        // 移動とスタミナ
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         let speedMultiplier = 1.0;
 
@@ -803,12 +899,12 @@
         player.position.x = Math.max(-42.0, Math.min(42.0, player.position.x));
         player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
-        // 鍵取得
+        // 鍵取得判定
         keys.forEach(k => {
           if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.5) {
             k.collected = true;
             scene.remove(k.mesh);
-            scene.remove(k.light);
+            if (k.light) scene.remove(k.light);
             keysCollectedCount++;
             keyCountEl.textContent = `${keysCollectedCount} / ${keyPositions.length}`;
             audio.playKeyPickup();
@@ -821,7 +917,7 @@
           }
         });
 
-        // 脱出
+        // 脱出判定
         if (player.position.z < -60 && Math.abs(player.position.x) < 4) {
           if (keysCollectedCount >= keyPositions.length) {
             triggerGameClear();
@@ -830,8 +926,8 @@
           }
         }
 
-        // モンスターAI
-        const distanceToMonster = player.position.distanceTo(monsterGroup.position);
+        // --- モンスター1（追跡型）の挙動 ---
+        const dist1 = player.position.distanceTo(monster1.group.position);
 
         if (player.position.z < 10 && !isChasing) {
           isChasing = true;
@@ -839,28 +935,42 @@
         }
 
         if (isChasing) {
-          monsterGroup.lookAt(player.position.x, 0, player.position.z);
-          head.position.x = Math.sin(time * 35) * 0.06;
+          monster1.group.lookAt(player.position.x, 0, player.position.z);
+          monster1.head.position.x = Math.sin(time * 35) * 0.06;
 
           heartbeatTimer += delta;
-          const heartbeatInterval = Math.max(0.18, distanceToMonster * 0.045);
+          const heartbeatInterval = Math.max(0.18, dist1 * 0.045);
           if (heartbeatTimer > heartbeatInterval) {
             audio.playHeartbeat();
             heartbeatTimer = 0;
           }
 
           const chaseSpeed = 3.8 * delta;
-          const chaseDir = new THREE.Vector3().subVectors(player.position, monsterGroup.position);
+          const chaseDir = new THREE.Vector3().subVectors(player.position, monster1.group.position);
           chaseDir.y = 0;
           chaseDir.normalize();
 
-          monsterGroup.position.addScaledVector(chaseDir, chaseSpeed);
+          monster1.group.position.addScaledVector(chaseDir, chaseSpeed);
 
-          // 捕獲判定
-          if (distanceToMonster < 1.5) {
-            triggerGameOver();
-          }
+          if (dist1 < 1.5) triggerGameOver(monster1.group);
         }
+
+        // --- 【新規追加】モンスター2（巡回型）のAI挙動 ---
+        const dist2 = player.position.distanceTo(monster2.group.position);
+        monster2.head.position.x = Math.sin(time * 20) * 0.05;
+
+        // 左右へ巡回
+        if (monster2.group.position.x < patrolTargetX) {
+          monster2.group.position.x += patrolSpeed * delta;
+          monster2.group.rotation.y = Math.PI / 2;
+          if (monster2.group.position.x >= patrolTargetX) patrolTargetX = -30;
+        } else {
+          monster2.group.position.x -= patrolSpeed * delta;
+          monster2.group.rotation.y = -Math.PI / 2;
+          if (monster2.group.position.x <= patrolTargetX) patrolTargetX = 30;
+        }
+
+        if (dist2 < 1.6) triggerGameOver(monster2.group);
       }
 
       renderer.render(scene, camera);
