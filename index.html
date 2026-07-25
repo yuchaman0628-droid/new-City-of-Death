@@ -21,7 +21,6 @@
       display: block;
     }
 
-    /* レトロVHS・暗闇ノイズオーバーレイ */
     #vhs-overlay {
       position: absolute;
       top: 0; left: 0;
@@ -38,7 +37,6 @@
       z-index: 10;
     }
 
-    /* 照準 */
     #crosshair {
       position: absolute;
       top: 50%; left: 50%;
@@ -62,7 +60,6 @@
       display: none;
     }
 
-    /* タイトル画面UI */
     #title-screen {
       position: absolute;
       top: 0; left: 0;
@@ -125,7 +122,6 @@
       text-align: center;
     }
 
-    /* ジャンプスケア（驚かし）オーバーレイ */
     #jumpscare-overlay {
       position: absolute;
       top: 0; left: 0;
@@ -159,7 +155,6 @@
   <div id="crosshair"></div>
   <div id="ui">『死の市』</div>
 
-  <!-- タイトル画面UI -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
     <div class="subtitle">- SHI NO ICHI -</div>
@@ -170,7 +165,6 @@
     </div>
   </div>
 
-  <!-- 驚かし画面 -->
   <div id="jumpscare-overlay">
     <div id="jumpscare-text">死</div>
   </div>
@@ -178,7 +172,7 @@
   <div id="canvas-container"></div>
 
   <script>
-    // --- BGM・効果音合成システム (Web Audio API) ---
+    // --- 音声合成システム (Web Audio API) ---
     class AudioSystem {
       constructor() {
         this.ctx = null;
@@ -257,7 +251,6 @@
         osc.stop(this.ctx.currentTime + 1.5);
       }
 
-      // 驚かし音（衝撃音）
       playJumpscareSound() {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
@@ -301,7 +294,8 @@
     scene.fog = new THREE.FogExp2(0x020204, 0.12);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-    
+    camera.rotation.order = 'YXZ'; // 視点計算のねじれを抑える標準設定
+
     const player = new THREE.Object3D();
     player.position.set(0, 1.6, 5);
     player.add(camera);
@@ -322,15 +316,13 @@
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // --- 内装・背景オブジェクトの作成 ---
-    // アスファルト床
+    // 床・壁・オブジェクト
     const floorGeo = new THREE.PlaneGeometry(20, 60);
     const floorMat = new THREE.MeshBasicMaterial({ color: 0x111115 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // 壁
     const wallMat = new THREE.MeshBasicMaterial({ color: 0x18181c });
     const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, 6, 60), wallMat);
     leftWall.position.set(-5.5, 3, 0);
@@ -340,12 +332,10 @@
     rightWall.position.set(5.5, 3, 0);
     scene.add(rightWall);
 
-    // 内装プロップ：ダンボール箱・ゴミ箱・街灯など
     function buildProps() {
       const boxMat = new THREE.MeshBasicMaterial({ color: 0x3d2b1f });
       const metalMat = new THREE.MeshBasicMaterial({ color: 0x222225 });
 
-      // 段ボールの山（左右の壁際に配置）
       const boxPositions = [
         [-4, 0.4, 2], [-4, 0.4, 1.2], [-4, 1.2, 1.6],
         [4, 0.4, -3], [4.2, 0.4, -2], [3.8, 0.4, -8],
@@ -358,7 +348,6 @@
         scene.add(box);
       });
 
-      // ゴミ箱（ドラム缶風）
       const canGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 12);
       const can1 = new THREE.Mesh(canGeo, metalMat);
       can1.position.set(-4.5, 0.6, -2);
@@ -370,7 +359,6 @@
     }
     buildProps();
 
-    // 「死の市」ネオン看板
     let signLight;
     function createSign() {
       const canvas = document.createElement('canvas');
@@ -397,17 +385,14 @@
     }
     createSign();
 
-    // --- モンスター作成 ---
+    // モンスター
     const monsterGroup = new THREE.Group();
-    
-    // 体（黒い人影）
     const monsterBodyGeo = new THREE.CylinderGeometry(0.35, 0.25, 2.2, 8);
     const monsterMat = new THREE.MeshBasicMaterial({ color: 0x020202 });
     const monsterBody = new THREE.Mesh(monsterBodyGeo, monsterMat);
     monsterBody.position.y = 1.1;
     monsterGroup.add(monsterBody);
 
-    // 赤く光る目
     const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
@@ -417,27 +402,23 @@
     monsterGroup.add(leftEye);
     monsterGroup.add(rightEye);
 
-    // モンスターの初期位置（奥の看板の下）
     monsterGroup.position.set(0, 0, -16);
     scene.add(monsterGroup);
 
-    // --- ゲーム状態管理 ---
+    // --- ゲーム状態・操作の修正 ---
     let isPlaying = false;
     let isChasing = false;
     let isCaught = false;
 
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-    let lon = 0, lat = 0;
 
-    // ゲームリセット関数
     function resetGame() {
       player.position.set(0, 1.6, 5);
+      player.rotation.set(0, 0, 0);
+      camera.rotation.set(0, 0, 0);
       monsterGroup.position.set(0, 0, -16);
       isChasing = false;
       isCaught = false;
-      lon = 0;
-      lat = 0;
-      camera.lookAt(0, 1.6, 0);
       jumpscareOverlay.style.display = 'none';
     }
 
@@ -462,25 +443,15 @@
       }
     });
 
+    // 視点移動（安定した計算方式に変更）
     document.addEventListener('mousemove', (e) => {
       if (!isPlaying || isCaught) return;
 
-      const movementX = e.movementX || 0;
-      const movementY = e.movementY || 0;
-
-      lon -= movementX * 0.15;
-      lat -= movementY * 0.15;
-      lat = Math.max(-85, Math.min(85, lat));
-
-      const phi = THREE.MathUtils.degToRad(90 - lat);
-      const theta = THREE.MathUtils.degToRad(lon);
-
-      const target = new THREE.Vector3();
-      target.x = Math.sin(phi) * Math.cos(theta);
-      target.y = Math.cos(phi);
-      target.z = Math.sin(phi) * Math.sin(theta);
-
-      camera.lookAt(target);
+      const sensitivity = 0.002;
+      player.rotation.y -= e.movementX * sensitivity; // 水平回転（プレイヤー自体を回す）
+      
+      camera.rotation.x -= e.movementY * sensitivity; // 垂直回転（カメラだけを上下させる）
+      camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
     });
 
     document.addEventListener('keydown', (e) => {
@@ -501,7 +472,6 @@
       }
     });
 
-    // --- ジャンプスケア＆タイトル復帰処理 ---
     function triggerJumpscare() {
       isCaught = true;
       isPlaying = false;
@@ -512,7 +482,6 @@
 
       jumpscareOverlay.style.display = 'flex';
 
-      // 3秒後にタイトル画面へ復帰
       setTimeout(() => {
         jumpscareOverlay.style.display = 'none';
         titleScreen.style.display = 'flex';
@@ -532,58 +501,50 @@
       const time = clock.getElapsedTime();
 
       if (isPlaying && !isCaught) {
-        // --- プレイヤー移動 ---
-        const moveSpeed = 2.8 * delta;
-        const forwardVector = new THREE.Vector3();
-        camera.getWorldDirection(forwardVector);
-        forwardVector.y = 0;
-        forwardVector.normalize();
+        // 直感的な移動計算（プレイヤーが向いているローカル方向へ移動）
+        const moveSpeed = 3.0 * delta;
+        
+        if (moveForward) player.translateZ(-moveSpeed);
+        if (moveBackward) player.translateZ(moveSpeed);
+        if (moveLeft) player.translateX(-moveSpeed);
+        if (moveRight) player.translateX(moveSpeed);
 
-        const sideVector = new THREE.Vector3();
-        sideVector.crossVectors(camera.up, forwardVector).normalize();
-
-        if (moveForward) player.position.addScaledVector(forwardVector, moveSpeed);
-        if (moveBackward) player.position.addScaledVector(forwardVector, -moveSpeed);
-        if (moveLeft) player.position.addScaledVector(sideVector, moveSpeed);
-        if (moveRight) player.position.addScaledVector(sideVector, -moveSpeed);
+        // Y座標（高さ）を1.6mに固定
+        player.position.y = 1.6;
 
         // 壁の移動制限
         player.position.x = Math.max(-4.2, Math.min(4.2, player.position.x));
         player.position.z = Math.max(-24, Math.min(8, player.position.z));
 
-        // 懐中電灯の手ブレ演出
+        // 懐中電灯の手ブレ
         if (moveForward || moveBackward || moveLeft || moveRight) {
           flashlight.position.y = Math.sin(time * 8) * 0.02;
           flashlight.position.x = Math.cos(time * 4) * 0.02;
         }
 
-        // --- モンスターAI（追撃ロジック） ---
+        // モンスターAI
         const distanceToMonster = player.position.distanceTo(monsterGroup.position);
 
-        // プレイヤーが一定距離（z = -5以下）に近づくと追撃開始
         if (player.position.z < -5 && !isChasing) {
           isChasing = true;
         }
 
         if (isChasing) {
-          // プレイヤーの方向へ向き・移動
           monsterGroup.lookAt(player.position.x, 0, player.position.z);
           
-          const chaseSpeed = 2.2 * delta;
+          const chaseSpeed = 2.3 * delta;
           const chaseDir = new THREE.Vector3().subVectors(player.position, monsterGroup.position);
           chaseDir.y = 0;
           chaseDir.normalize();
 
           monsterGroup.position.addScaledVector(chaseDir, chaseSpeed);
 
-          // 捕獲判定（距離が1.2m以内になったら捕まる）
           if (distanceToMonster < 1.2) {
             triggerJumpscare();
           }
         }
       }
 
-      // 看板の点滅
       if (signLight) {
         signLight.intensity = Math.random() > 0.08 ? 1.5 : 0.2;
       }
