@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - GameOver Fixed Edition</title>
+  <title>死の市 - Terrifying Monster Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -274,12 +274,12 @@
   <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- HARD & WIDE STREETS -</div>
+    <div class="subtitle">- FEAR OF THE UNKNOWN -</div>
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点変更<br>
-      【目標】街を徘徊する異形を避け、<span style="color:#ff3333">3つの鍵</span> を見つけて脱出せよ。<br>
-      化け物に触れると即死亡します。建物を壁にして逃げ切りましょう。
+      【目標】街を徘徊する不気味な異形を避け、<span style="color:#ff3333">3つの鍵</span> を見つけて脱出せよ。<br>
+      ※異形が近づくと恐怖の音が大きくなります。
     </div>
   </div>
 
@@ -301,23 +301,23 @@
   <div id="canvas-container"></div>
 
   <script>
-    // --- サウンドシステム ---
+    // --- Dynamic Sound System ---
     class AudioSystem {
       constructor() {
         this.ctx = null;
         this.isPlaying = false;
-        this.oscillators = [];
-        this.gainNode = null;
+        
+        this.baseGain = null;
+        this.baseOscs = [];
+        
+        this.chaseGain = null;
+        this.chaseOscs = [];
       }
 
       init() {
         if (this.ctx) return;
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioContext();
-
-        this.gainNode = this.ctx.createGain();
-        this.gainNode.gain.setValueAtTime(0.3, this.ctx.currentTime);
-        this.gainNode.connect(this.ctx.destination);
       }
 
       startBGM() {
@@ -326,24 +326,31 @@
         if (this.isPlaying) return;
         this.isPlaying = true;
 
-        const osc1 = this.ctx.createOscillator();
-        osc1.type = 'sawtooth';
-        osc1.frequency.setValueAtTime(32, this.ctx.currentTime);
+        const now = this.ctx.currentTime;
 
-        const osc2 = this.ctx.createOscillator();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(34.5, this.ctx.currentTime);
+        // Base Ambient Sound
+        this.baseGain = this.ctx.createGain();
+        this.baseGain.gain.setValueAtTime(0.25, now);
+        this.baseGain.connect(this.ctx.destination);
 
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(100, this.ctx.currentTime);
+        const baseOsc1 = this.ctx.createOscillator();
+        baseOsc1.type = 'sawtooth';
+        baseOsc1.frequency.setValueAtTime(32, now);
 
-        osc1.connect(filter);
-        osc2.connect(filter);
-        filter.connect(this.gainNode);
+        const baseOsc2 = this.ctx.createOscillator();
+        baseOsc2.type = 'sine';
+        baseOsc2.frequency.setValueAtTime(36, now);
 
-        osc1.start();
-        osc2.start();
+        const baseFilter = this.ctx.createBiquadFilter();
+        baseFilter.type = 'lowpass';
+        baseFilter.frequency.setValueAtTime(110, now);
+
+        baseOsc1.connect(baseFilter);
+        baseOsc2.connect(baseFilter);
+        baseFilter.connect(this.baseGain);
+
+        baseOsc1.start();
+        baseOsc2.start();
 
         const bufferSize = this.ctx.sampleRate * 2;
         const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -352,25 +359,72 @@
           output[i] = Math.random() * 2 - 1;
         }
 
-        const whiteNoise = this.ctx.createBufferSource();
-        whiteNoise.buffer = noiseBuffer;
-        whiteNoise.loop = true;
+        const bgNoise = this.ctx.createBufferSource();
+        bgNoise.buffer = noiseBuffer;
+        bgNoise.loop = true;
 
         const noiseFilter = this.ctx.createBiquadFilter();
         noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.setValueAtTime(200, this.ctx.currentTime);
-        noiseFilter.Q.setValueAtTime(3.0, this.ctx.currentTime);
+        noiseFilter.frequency.setValueAtTime(180, now);
+        noiseFilter.Q.setValueAtTime(2.5, now);
 
         const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        noiseGain.gain.setValueAtTime(0.06, now);
 
-        whiteNoise.connect(noiseFilter);
+        bgNoise.connect(noiseFilter);
         noiseFilter.connect(noiseGain);
-        noiseGain.connect(this.gainNode);
+        noiseGain.connect(this.baseGain);
 
-        whiteNoise.start();
+        bgNoise.start();
+        this.baseOscs = [baseOsc1, baseOsc2, bgNoise];
 
-        this.oscillators = [osc1, osc2, whiteNoise];
+        // Terrifying Proximity Sound
+        this.chaseGain = this.ctx.createGain();
+        this.chaseGain.gain.setValueAtTime(0.0, now);
+        this.chaseGain.connect(this.ctx.destination);
+
+        const chaseOsc1 = this.ctx.createOscillator();
+        chaseOsc1.type = 'sawtooth';
+        chaseOsc1.frequency.setValueAtTime(620, now);
+
+        const chaseOsc2 = this.ctx.createOscillator();
+        chaseOsc2.type = 'square';
+        chaseOsc2.frequency.setValueAtTime(632, now);
+
+        const lfo = this.ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(8, now);
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.setValueAtTime(200, now);
+        lfo.connect(chaseOsc1.frequency);
+        lfo.start();
+
+        const chaseFilter = this.ctx.createBiquadFilter();
+        chaseFilter.type = 'highpass';
+        chaseFilter.frequency.setValueAtTime(400, now);
+
+        chaseOsc1.connect(chaseFilter);
+        chaseOsc2.connect(chaseFilter);
+        chaseFilter.connect(this.chaseGain);
+
+        chaseOsc1.start();
+        chaseOsc2.start();
+
+        this.chaseOscs = [chaseOsc1, chaseOsc2, lfo];
+      }
+
+      updateChaseBGMVolume(distance) {
+        if (!this.ctx || !this.isPlaying || !this.chaseGain) return;
+
+        const maxDistance = 25.0;
+        let volume = 0;
+
+        if (distance < maxDistance) {
+          const factor = 1 - (distance / maxDistance);
+          volume = Math.pow(factor, 1.5) * 0.45;
+        }
+
+        this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.1);
       }
 
       playHeartbeat() {
@@ -379,17 +433,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(70, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(18, this.ctx.currentTime + 0.18);
+        osc.frequency.setValueAtTime(75, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(15, this.ctx.currentTime + 0.16);
 
-        gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.16);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.18);
+        osc.stop(this.ctx.currentTime + 0.16);
       }
 
       playKeyPickup() {
@@ -417,8 +471,8 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(450, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 2.5);
+        osc.frequency.setValueAtTime(500, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(15, this.ctx.currentTime + 2.5);
 
         gain.gain.setValueAtTime(1.0, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2.5);
@@ -433,16 +487,19 @@
       stopBGM() {
         if (!this.isPlaying) return;
         this.isPlaying = false;
-        this.oscillators.forEach(osc => {
+        
+        [...this.baseOscs, ...this.chaseOscs].forEach(osc => {
           try { osc.stop(); } catch(e){}
         });
-        this.oscillators = [];
+        
+        this.baseOscs = [];
+        this.chaseOscs = [];
       }
     }
 
     const audio = new AudioSystem();
 
-    // --- DOM要素 ---
+    // DOM Elements
     const container = document.getElementById('canvas-container');
     const titleScreen = document.getElementById('title-screen');
     const startBtn = document.getElementById('start-btn');
@@ -457,7 +514,7 @@
     const clearOverlay = document.getElementById('clear-overlay');
     const flashOverlay = document.getElementById('flash-overlay');
 
-    // --- 3Dグラフィック環境 ---
+    // 3D Scene Setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020205);
     scene.fog = new THREE.FogExp2(0x020205, 0.04);
@@ -488,14 +545,14 @@
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // 床
+    // Floor
     const floorGeo = new THREE.PlaneGeometry(180, 160);
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.9 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // テクスチャ
+    // Building Texture
     function generateBuildingTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 128; canvas.height = 256;
@@ -526,11 +583,8 @@
     }
 
     const bldgTexture = generateBuildingTexture();
-
-    // --- 建物の当たり判定データ ---
     const buildingColliders = [];
 
-    // マップ構築
     function buildWideCity() {
       const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.8 });
       const poleMat = new THREE.MeshStandardMaterial({ color: 0x222228 });
@@ -570,7 +624,7 @@
     }
     buildWideCity();
 
-    // 看板・扉
+    // Sign & Exit
     let exitDoor;
     function createMainSignAndDoor() {
       const canvas = document.createElement('canvas');
@@ -604,7 +658,7 @@
     }
     createMainSignAndDoor();
 
-    // 鍵モデル
+    // Key Model
     function createKey3DModel() {
       const keyGroup = new THREE.Group();
       const goldMat = new THREE.MeshStandardMaterial({
@@ -659,36 +713,71 @@
       });
     }
 
-    // モンスター生成
-    function createMonster(eyeColorHex = 0xff0000) {
+    // --- 新・リアルな不気味モンスターデザインの生成 ---
+    function createScaryMonster(eyeColorHex = 0xff0000) {
       const group = new THREE.Group();
-      const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
+      
+      // 不気味な漆黒の質感（粗さ高め＋わずかな発光）
+      const monsterMat = new THREE.MeshStandardMaterial({ 
+        color: 0x030305, 
+        roughness: 0.95,
+        metalness: 0.2
+      });
 
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.12, 2.8, 8), monsterMat);
-      body.position.y = 1.4;
+      // 1. 細長く歪んだ胴体（高さをアップ）
+      const bodyGeo = new THREE.CylinderGeometry(0.18, 0.08, 3.4, 8);
+      const body = new THREE.Mesh(bodyGeo, monsterMat);
+      body.position.y = 1.7;
       group.add(body);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), monsterMat);
-      head.position.y = 2.9;
+      // 2. 異形な頭部（不揃いな楕円球）
+      const headGeo = new THREE.SphereGeometry(0.32, 8, 8);
+      headGeo.scale(1.0, 1.3, 0.9); // 上下に引き伸ばして不揃いに
+      const head = new THREE.Mesh(headGeo, monsterMat);
+      head.position.y = 3.3;
       group.add(head);
 
-      const eyeGeo = new THREE.SphereGeometry(0.065, 8, 8);
-      const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColorHex });
-      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-      leftEye.position.set(-0.13, 2.95, -0.32);
-      const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-      rightEye.position.set(0.13, 2.95, -0.32);
-      group.add(leftEye);
-      group.add(rightEye);
+      // 3. 頭部の異形ツノ/棘（不気味なシルエット強調）
+      const hornGeo = new THREE.ConeGeometry(0.05, 0.6, 5);
+      const horn1 = new THREE.Mesh(hornGeo, monsterMat);
+      horn1.position.set(-0.15, 3.7, -0.05);
+      horn1.rotation.z = -0.3;
+      const horn2 = new THREE.Mesh(hornGeo, monsterMat);
+      horn2.position.set(0.12, 3.8, 0.02);
+      horn2.rotation.z = 0.25;
+      group.add(horn1);
+      group.add(horn2);
 
-      return { group, head };
+      // 4. 赤く光るマルチアイ（複眼：4つの赤目）
+      const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColorHex });
+      const eyeGeo = new THREE.SphereGeometry(0.045, 6, 6);
+
+      const eyePositions = [
+        new THREE.Vector3(-0.12, 3.35, -0.28),
+        new THREE.Vector3(0.12, 3.35, -0.28),
+        new THREE.Vector3(-0.05, 3.20, -0.29),
+        new THREE.Vector3(0.06, 3.48, -0.27)
+      ];
+
+      eyePositions.forEach(pos => {
+        const eye = new THREE.Mesh(eyeGeo, eyeMat);
+        eye.position.copy(pos);
+        group.add(eye);
+      });
+
+      // 5. 目元の赤く不穏な光
+      const eyeLight = new THREE.PointLight(eyeColorHex, 0.8, 4);
+      eyeLight.position.set(0, 3.3, -0.3);
+      group.add(eyeLight);
+
+      return { group, head, body };
     }
 
-    const monster1 = createMonster(0xff0000);
+    const monster1 = createScaryMonster(0xff0000); // 追跡者（赤目）
     monster1.group.position.set(0, 0, -65);
     scene.add(monster1.group);
 
-    const monster2 = createMonster(0x00ff44);
+    const monster2 = createScaryMonster(0xff0055); // 巡回者（不気味なピンク赤目）
     monster2.group.position.set(-30, 0, -15);
     scene.add(monster2.group);
 
@@ -702,7 +791,7 @@
       }, 300);
     }
 
-    // ゲーム状態
+    // Game States
     let isPlaying = false;
     let isChasing = false;
     let isGameOver = false;
@@ -826,7 +915,6 @@
       if (e.target !== retryBtn) returnToTitle();
     });
 
-    // --- 建物（壁）判定関数 ---
     function checkBuildingCollision(newX, newZ, radius = 0.6) {
       for (let i = 0; i < buildingColliders.length; i++) {
         const b = buildingColliders[i];
@@ -838,7 +926,6 @@
       return false;
     }
 
-    // --- モンスターと壁の衝突移動ロジック（滑り移動） ---
     function moveMonsterWithCollision(monsterGroup, moveVec, radius = 0.4) {
       const oldX = monsterGroup.position.x;
       const oldZ = monsterGroup.position.z;
@@ -846,23 +933,18 @@
       const targetX = oldX + moveVec.x;
       const targetZ = oldZ + moveVec.z;
 
-      // XZ両方で試す
       if (!checkBuildingCollision(targetX, targetZ, radius)) {
         monsterGroup.position.x = targetX;
         monsterGroup.position.z = targetZ;
       } else {
-        // X移動のみ試す（壁を滑る）
         if (!checkBuildingCollision(targetX, oldZ, radius)) {
           monsterGroup.position.x = targetX;
-        } 
-        // Z移動のみ試す（壁を滑る）
-        else if (!checkBuildingCollision(oldX, targetZ, radius)) {
+        } else if (!checkBuildingCollision(oldX, targetZ, radius)) {
           monsterGroup.position.z = targetZ;
         }
       }
     }
 
-    // --- ゲームオーバー演出（即死・画面発動） ---
     function triggerGameOver(caughtMonsterGroup) {
       if (isGameOver || isCleared) return;
       isGameOver = true;
@@ -890,7 +972,7 @@
       clearOverlay.style.display = 'flex';
     }
 
-    // --- メインループ ---
+    // Main Loop
     let clock = new THREE.Clock();
 
     function animate() {
@@ -899,7 +981,7 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // 鍵アニメーション
+      // Keys Animation
       keys.forEach(k => {
         if (!k.collected) {
           k.mesh.rotation.y += delta * 2.5;
@@ -908,7 +990,15 @@
         }
       });
 
-      // 死亡時ジャンプ演出
+      // Monster Eerie Wobble Animation (うごめくアニメーション)
+      [monster1, monster2].forEach((m, idx) => {
+        const speed = idx === 0 ? 12 : 8;
+        m.head.position.x = Math.sin(time * speed) * 0.08;
+        m.head.position.z = Math.cos(time * speed * 0.8) * 0.06;
+        m.body.rotation.z = Math.sin(time * 4) * 0.05;
+      });
+
+      // Game Over Jump Camera Animation
       if (isJumpingOver) {
         jumpTime += delta * 6;
         player.position.y = 1.6 + Math.sin(jumpTime) * 1.5;
@@ -921,7 +1011,7 @@
       }
 
       if (isPlaying && !isGameOver && !isCleared) {
-        // プレイヤー移動
+        // Player Movement
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         let speedMultiplier = 1.0;
 
@@ -955,7 +1045,7 @@
 
         player.position.y = 1.6;
 
-        // プレイヤーの建物衝突
+        // Player Collision
         if (checkBuildingCollision(player.position.x, player.position.z, 0.6)) {
           if (!checkBuildingCollision(player.position.x, oldZ, 0.6)) {
             player.position.z = oldZ;
@@ -967,11 +1057,10 @@
           }
         }
 
-        // 境界チェック
         player.position.x = Math.max(-42.0, Math.min(42.0, player.position.x));
         player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
-        // 鍵判定
+        // Key Pickup
         keys.forEach(k => {
           if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.5) {
             k.collected = true;
@@ -989,7 +1078,7 @@
           }
         });
 
-        // 脱出判定
+        // Exit Logic
         if (player.position.z < -60 && Math.abs(player.position.x) < 4) {
           if (keysCollectedCount >= keyPositions.length) {
             triggerGameClear();
@@ -998,7 +1087,7 @@
           }
         }
 
-        // --- モンスター1（追跡型）の処理 ---
+        // --- Monster 1 (Chaser) ---
         const pPos = new THREE.Vector3(player.position.x, 0, player.position.z);
         const m1Pos = new THREE.Vector3(monster1.group.position.x, 0, monster1.group.position.z);
         const dist1 = pPos.distanceTo(m1Pos);
@@ -1010,7 +1099,6 @@
 
         if (isChasing) {
           monster1.group.lookAt(player.position.x, 0, player.position.z);
-          monster1.head.position.x = Math.sin(time * 35) * 0.06;
 
           heartbeatTimer += delta;
           const heartbeatInterval = Math.max(0.18, dist1 * 0.045);
@@ -1022,20 +1110,16 @@
           const chaseSpeed = 3.8 * delta;
           const chaseDir = new THREE.Vector3().subVectors(pPos, m1Pos).normalize();
 
-          // 建物の当たり判定を適用して移動
-          const moveStep = chaseDir.multiplyScalar(chaseSpeed);
-          moveMonsterWithCollision(monster1.group, moveStep, 0.4);
+          moveMonsterWithCollision(monster1.group, chaseDir.multiplyScalar(chaseSpeed), 0.4);
 
-          // 【当たり判定：即死】
           if (dist1 < 2.0) {
             triggerGameOver(monster1.group);
           }
         }
 
-        // --- モンスター2（巡回型）の処理 ---
+        // --- Monster 2 (Patroller) ---
         const m2Pos = new THREE.Vector3(monster2.group.position.x, 0, monster2.group.position.z);
         const dist2 = pPos.distanceTo(m2Pos);
-        monster2.head.position.x = Math.sin(time * 20) * 0.05;
 
         let patrolDirX = 0;
         if (monster2.group.position.x < patrolTargetX) {
@@ -1048,13 +1132,15 @@
           if (monster2.group.position.x <= patrolTargetX) patrolTargetX = 30;
         }
 
-        // 建物の当たり判定を適用して移動
         moveMonsterWithCollision(monster2.group, new THREE.Vector3(patrolDirX, 0, 0), 0.4);
 
-        // 【当たり判定：即死】
         if (dist2 < 2.0) {
           triggerGameOver(monster2.group);
         }
+
+        // Dynamic Sound Update
+        const nearestMonsterDist = Math.min(dist1, dist2);
+        audio.updateChaseBGMVolume(nearestMonsterDist);
       }
 
       renderer.render(scene, camera);
