@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - GameOver Enhanced Edition</title>
+  <title>死の市 - GameOver Fixed Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -838,8 +838,8 @@
       return false;
     }
 
-    // --- 【新機能】モンスターと壁の衝突移動ロジック（滑り移動） ---
-    function moveMonsterWithCollision(monsterGroup, moveVec, radius = 0.5) {
+    // --- モンスターと壁の衝突移動ロジック（滑り移動） ---
+    function moveMonsterWithCollision(monsterGroup, moveVec, radius = 0.4) {
       const oldX = monsterGroup.position.x;
       const oldZ = monsterGroup.position.z;
 
@@ -862,19 +862,19 @@
       }
     }
 
-    // --- ゲームオーバー演出（ジャンプアクション＆死亡） ---
+    // --- ゲームオーバー演出（即死・画面発動） ---
     function triggerGameOver(caughtMonsterGroup) {
       if (isGameOver || isCleared) return;
       isGameOver = true;
       isPlaying = false;
-      document.exitPointerLock();
+
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
 
       audio.stopBGM();
       audio.playGameoverSound();
       triggerRedFlash();
-
-      caughtMonsterGroup.position.copy(player.position);
-      caughtMonsterGroup.position.z -= 0.8;
 
       isJumpingOver = true;
       jumpTime = 0;
@@ -910,10 +910,9 @@
 
       // 死亡時ジャンプ演出
       if (isJumpingOver) {
-        jumpTime += delta * 5;
-        player.position.y = 1.6 + Math.sin(jumpTime) * 1.2;
-        camera.rotation.x = -Math.PI / 3 + (Math.random() - 0.5) * 0.2;
-        camera.rotation.z = (Math.random() - 0.5) * 0.3;
+        jumpTime += delta * 6;
+        player.position.y = 1.6 + Math.sin(jumpTime) * 1.5;
+        camera.rotation.x = -Math.PI / 3.5 + Math.sin(jumpTime * 2) * 0.2;
 
         if (jumpTime > Math.PI) {
           isJumpingOver = false;
@@ -999,8 +998,10 @@
           }
         }
 
-        // --- 【モンスター1（追跡型）のAI＆衝突判定】 ---
-        const dist1 = player.position.distanceTo(monster1.group.position);
+        // --- モンスター1（追跡型）の処理 ---
+        const pPos = new THREE.Vector3(player.position.x, 0, player.position.z);
+        const m1Pos = new THREE.Vector3(monster1.group.position.x, 0, monster1.group.position.z);
+        const dist1 = pPos.distanceTo(m1Pos);
 
         if (player.position.z < 10 && !isChasing) {
           isChasing = true;
@@ -1019,20 +1020,21 @@
           }
 
           const chaseSpeed = 3.8 * delta;
-          const chaseDir = new THREE.Vector3().subVectors(player.position, monster1.group.position);
-          chaseDir.y = 0;
-          chaseDir.normalize();
+          const chaseDir = new THREE.Vector3().subVectors(pPos, m1Pos).normalize();
 
           // 建物の当たり判定を適用して移動
           const moveStep = chaseDir.multiplyScalar(chaseSpeed);
-          moveMonsterWithCollision(monster1.group, moveStep, 0.5);
+          moveMonsterWithCollision(monster1.group, moveStep, 0.4);
 
-          // 接触判定（当たったら死ぬ）
-          if (dist1 < 1.5) triggerGameOver(monster1.group);
+          // 【当たり判定：即死】
+          if (dist1 < 2.0) {
+            triggerGameOver(monster1.group);
+          }
         }
 
-        // --- 【モンスター2（巡回型）のAI＆衝突判定】 ---
-        const dist2 = player.position.distanceTo(monster2.group.position);
+        // --- モンスター2（巡回型）の処理 ---
+        const m2Pos = new THREE.Vector3(monster2.group.position.x, 0, monster2.group.position.z);
+        const dist2 = pPos.distanceTo(m2Pos);
         monster2.head.position.x = Math.sin(time * 20) * 0.05;
 
         let patrolDirX = 0;
@@ -1047,10 +1049,12 @@
         }
 
         // 建物の当たり判定を適用して移動
-        moveMonsterWithCollision(monster2.group, new THREE.Vector3(patrolDirX, 0, 0), 0.5);
+        moveMonsterWithCollision(monster2.group, new THREE.Vector3(patrolDirX, 0, 0), 0.4);
 
-        // 接触判定（当たったら死ぬ）
-        if (dist2 < 1.6) triggerGameOver(monster2.group);
+        // 【当たり判定：即死】
+        if (dist2 < 2.0) {
+          triggerGameOver(monster2.group);
+        }
       }
 
       renderer.render(scene, camera);
