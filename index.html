@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Enhanced Pause & Sound Edition</title>
+  <title>死の市 - Minimap & Horror Music Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -29,8 +29,8 @@
       pointer-events: none;
       background: repeating-linear-gradient(
         0deg,
-        rgba(0, 0, 0, 0.3),
-        rgba(0, 0, 0, 0.3) 1px,
+        rgba(0, 0, 0, 0.25),
+        rgba(0, 0, 0, 0.25) 1px,
         transparent 1px,
         transparent 2px
       );
@@ -93,6 +93,27 @@
       height: 100%;
       background: #00b359;
       transition: width 0.1s linear, background-color 0.2s;
+    }
+
+    /* ミニマップ */
+    #minimap-container {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 150px;
+      height: 150px;
+      background: rgba(10, 10, 15, 0.85);
+      border: 2px solid #555;
+      border-radius: 50%;
+      z-index: 25;
+      display: none;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.9), inset 0 0 10px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+    }
+
+    #minimap-canvas {
+      width: 100%;
+      height: 100%;
     }
 
     /* ポーズ画面 */
@@ -301,6 +322,11 @@
     <div style="font-size:10px; color:#aaa; margin-top:4px;">[Esc] メニュー・設定</div>
   </div>
 
+  <!-- ミニマップ UI -->
+  <div id="minimap-container">
+    <canvas id="minimap-canvas" width="150" height="150"></canvas>
+  </div>
+
   <!-- ポーズ画面 -->
   <div id="pause-menu">
     <div class="menu-title">P A U S E D</div>
@@ -330,12 +356,12 @@
   <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- GLOWING HORROR EDITION -</div>
+    <div class="subtitle">- MAP & HORROR MUSIC EDITION -</div>
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点 | [Esc] ポーズメニュー<br>
-      【目標】街に隠された <span style="color:#ff3333">5つの鍵</span> を見つけて脱出せよ。<br>
-      ※4つ目の鍵を回収すると、<span style="color:#ff0000; font-weight:bold;">超強力な異形</span> が目覚めます。
+      【マップ】右下のレーダーで <span style="color:#00ff88">自分</span>・<span style="color:#ffcc00">鍵</span>・<span style="color:#ff0000">敵</span> の位置を確認せよ。<br>
+      【目標】街に隠された <span style="color:#ff3333">5つの鍵</span> を回収して北の最深部から脱出せよ。
     </div>
   </div>
 
@@ -373,7 +399,7 @@
     bgmVolSlider.addEventListener('input', (e) => { bgmVolume = e.target.value / 100; audio.updateVolumes(); });
     seVolSlider.addEventListener('input', (e) => { seVolume = e.target.value / 100; audio.updateVolumes(); });
 
-    // --- Audio Engine ---
+    // --- Audio Engine (雑音排除・ホラー楽曲BGM搭載) ---
     class HorrorMusicEngine {
       constructor() {
         this.ctx = null;
@@ -385,7 +411,8 @@
 
         this.chaseGain = null;
         this.musicInterval = null;
-        this.notes = [110.00, 116.54, 130.81, 138.59, 164.81, 174.61, 220.00];
+        // 不気味な短音階ピアノ風スケール (C, Eb, F, F#, G, B)
+        this.notes = [130.81, 155.56, 174.61, 185.00, 196.00, 246.94, 261.63, 311.13];
       }
 
       init() {
@@ -420,79 +447,67 @@
 
         const now = this.ctx.currentTime;
 
-        // 1. 低音ドローンBGM
-        const subOsc = this.ctx.createOscillator();
-        subOsc.type = 'triangle';
-        subOsc.frequency.setValueAtTime(55.0, now); // A1
+        // 1. 重厚なベースストリングスBGM（クリアなサイン波＋低域フィルターで雑音なし）
+        const bassOsc = this.ctx.createOscillator();
+        bassOsc.type = 'sine';
+        bassOsc.frequency.setValueAtTime(65.41, now); // C2
 
-        const subFilter = this.ctx.createBiquadFilter();
-        subFilter.type = 'lowpass';
-        subFilter.frequency.setValueAtTime(150, now);
+        const bassFilter = this.ctx.createBiquadFilter();
+        bassFilter.type = 'lowpass';
+        bassFilter.frequency.setValueAtTime(200, now);
 
-        subOsc.connect(subFilter);
-        subFilter.connect(this.bgmNode);
-        subOsc.start();
+        bassOsc.connect(bassFilter);
+        bassFilter.connect(this.bgmNode);
+        bassOsc.start();
 
-        // 2. 迫ってくる時の重低音唸り
+        // 2. 接近時の警告音（低音うねり）
         this.chaseGain = this.ctx.createGain();
         this.chaseGain.gain.setValueAtTime(0.0, now);
         this.chaseGain.connect(this.seNode);
 
-        const chaseOsc1 = this.ctx.createOscillator();
-        chaseOsc1.type = 'sawtooth';
-        chaseOsc1.frequency.setValueAtTime(45.0, now);
+        const chaseOsc = this.ctx.createOscillator();
+        chaseOsc.type = 'triangle';
+        chaseOsc.frequency.setValueAtTime(50.0, now);
 
-        const chaseOsc2 = this.ctx.createOscillator();
-        chaseOsc2.type = 'sawtooth';
-        chaseOsc2.frequency.setValueAtTime(48.0, now); // 不協和
-
-        const chaseFilter = this.ctx.createBiquadFilter();
-        chaseFilter.type = 'lowpass';
-        chaseFilter.frequency.setValueAtTime(300, now);
-
-        chaseOsc1.connect(chaseFilter);
-        chaseOsc2.connect(chaseFilter);
-        chaseFilter.connect(this.chaseGain);
-
-        chaseOsc1.start();
-        chaseOsc2.start();
+        chaseOsc.connect(this.chaseGain);
+        chaseOsc.start();
 
         this.startMelodySequence();
       }
 
+      // 不気味なアルペジオピアノ旋律の演奏
       startMelodySequence() {
         const step = () => {
           if (!this.isPlaying) return;
 
-          if (Math.random() < 0.6) {
-            this.playSoftNote();
-          }
+          this.playPianoNote();
 
-          const nextTime = Math.random() * 1000 + 500;
+          const nextTime = Math.random() * 800 + 400;
           this.musicInterval = setTimeout(step, nextTime);
         };
         step();
       }
 
-      playSoftNote() {
+      playPianoNote() {
         if (!this.ctx || !this.isPlaying) return;
         const now = this.ctx.currentTime;
 
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'sine';
+        // 澄んだ三角波でダークピアノ風の質感
+        osc.type = 'triangle';
         const freq = this.notes[Math.floor(Math.random() * this.notes.length)];
         osc.frequency.setValueAtTime(freq, now);
 
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
 
         osc.connect(gain);
         gain.connect(this.bgmNode);
 
         osc.start(now);
-        osc.stop(now + 2.5);
+        osc.stop(now + 2.0);
       }
 
       updateChaseVolume(distance) {
@@ -503,7 +518,7 @@
 
         if (distance < maxDist) {
           const factor = 1 - (distance / maxDist);
-          volume = Math.pow(factor, 1.2) * 0.95; // よりはっきり大きく聞こえるように調整
+          volume = Math.pow(factor, 1.2) * 0.8;
         }
 
         this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.05);
@@ -517,17 +532,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(90, now);
-        osc.frequency.exponentialRampToValueAtTime(15, now + 0.18);
+        osc.frequency.setValueAtTime(80, now);
+        osc.frequency.exponentialRampToValueAtTime(15, now + 0.16);
 
-        gain.gain.setValueAtTime(0.9 * volumeRatio, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        gain.gain.setValueAtTime(0.85 * volumeRatio, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 0.18);
+        osc.stop(now + 0.16);
       }
 
       playKeyPickup() {
@@ -558,10 +573,10 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.setValueAtTime(180, now);
         osc.frequency.exponentialRampToValueAtTime(20, now + 1.5);
 
-        gain.gain.setValueAtTime(0.8, now);
+        gain.gain.setValueAtTime(0.7, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
 
         osc.connect(gain);
@@ -590,6 +605,10 @@
     const clearTitleBtn = document.getElementById('clear-title-btn');
     const crosshair = document.getElementById('crosshair');
     const ui = document.getElementById('ui');
+    const minimapContainer = document.getElementById('minimap-container');
+    const minimapCanvas = document.getElementById('minimap-canvas');
+    const minimapCtx = minimapCanvas.getContext('2d');
+
     const keyCountEl = document.getElementById('key-count');
     const staminaBar = document.getElementById('stamina-bar');
     const msgLog = document.getElementById('message-log');
@@ -632,7 +651,7 @@
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // Building Texture & Generation
+    // Building Generation
     function generateBuildingTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 128; canvas.height = 256;
@@ -669,7 +688,6 @@
     }
     buildWideCity();
 
-    // Sign & Door
     function createMainSignAndDoor() {
       const canvas = document.createElement('canvas');
       canvas.width = 512; canvas.height = 256;
@@ -720,41 +738,36 @@
         const pointLight = new THREE.PointLight(0xffaa00, 1.5, 5);
         pointLight.position.copy(pos);
         scene.add(pointLight);
-        keys.push({ mesh, light: pointLight, collected: false });
+        keys.push({ mesh, light: pointLight, collected: false, pos: pos.clone() });
       });
     }
 
-    // --- 光る発光モンスターモデル ---
+    // Glowing Monsters
     function createGlowingMonster(glowColorHex = 0xff0000, isBoss = false) {
       const group = new THREE.Group();
       const scale = isBoss ? 1.6 : 1.0;
 
-      // ボディ（黒＋発光ライン）
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x050508, roughness: 0.5 });
       const body = new THREE.Mesh(new THREE.ConeGeometry(0.25 * scale, 3.8 * scale, 5), bodyMat);
       body.rotation.x = Math.PI;
       body.position.y = 1.9 * scale;
       group.add(body);
 
-      // 発光体コア（胸・胴体の強烈な光）
       const glowMat = new THREE.MeshBasicMaterial({ color: glowColorHex });
       const core = new THREE.Mesh(new THREE.SphereGeometry(0.2 * scale, 8, 8), glowMat);
       core.position.y = 2.0 * scale;
       group.add(core);
 
-      // ヘッド
       const head = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35 * scale), bodyMat);
       head.position.y = 3.6 * scale;
       group.add(head);
 
-      // 赤く不気味に光る複数の目
       for (let i = 0; i < (isBoss ? 8 : 4); i++) {
         const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06 * scale, 6, 6), glowMat);
         eye.position.set((Math.random() - 0.5) * 0.35 * scale, (3.5 + (Math.random() - 0.5) * 0.3) * scale, -0.3 * scale);
         group.add(eye);
       }
 
-      // モンスター自身が周囲を不気味に照らすライト
       const monsterLight = new THREE.PointLight(glowColorHex, isBoss ? 4.0 : 2.5, isBoss ? 12 : 7);
       monsterLight.position.set(0, 2.5 * scale, 0);
       group.add(monsterLight);
@@ -807,12 +820,10 @@
       if (!isPlaying || isGameOver || isCleared) return;
 
       if (isPaused) {
-        // 解除
         isPaused = false;
         pauseMenu.style.display = 'none';
         document.body.requestPointerLock();
       } else {
-        // ポーズ
         isPaused = true;
         pauseMenu.style.display = 'flex';
         document.exitPointerLock();
@@ -828,6 +839,7 @@
       titleScreen.style.display = 'flex';
       crosshair.style.display = 'none';
       ui.style.display = 'none';
+      minimapContainer.style.display = 'none';
       isPaused = false;
       resetGame();
     }
@@ -875,6 +887,7 @@
           titleScreen.style.display = 'none';
           crosshair.style.display = 'block';
           ui.style.display = 'block';
+          minimapContainer.style.display = 'block';
           audio.start();
         }
       } else {
@@ -974,6 +987,93 @@
 
       audio.stop();
       clearOverlay.style.display = 'flex';
+    }
+
+    // --- ミニマップ描写処理 ---
+    function renderMinimap() {
+      const width = minimapCanvas.width;
+      const height = minimapCanvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const mapScale = 1.6; // レーダーの縮尺
+
+      minimapCtx.clearRect(0, 0, width, height);
+
+      // 背景・レーダー線
+      minimapCtx.fillStyle = 'rgba(5, 5, 10, 0.9)';
+      minimapCtx.fillRect(0, 0, width, height);
+
+      minimapCtx.strokeStyle = 'rgba(0, 255, 136, 0.15)';
+      minimapCtx.lineWidth = 1;
+      minimapCtx.beginPath();
+      minimapCtx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+      minimapCtx.arc(centerX, centerY, 60, 0, Math.PI * 2);
+      minimapCtx.moveTo(centerX, 0); minimapCtx.lineTo(centerX, height);
+      minimapCtx.moveTo(0, centerY); minimapCtx.lineTo(width, centerY);
+      minimapCtx.stroke();
+
+      // 建物を描画
+      minimapCtx.fillStyle = 'rgba(80, 80, 100, 0.4)';
+      buildingColliders.forEach(b => {
+        const dx = (b.minX + b.maxX) / 2 - player.position.x;
+        const dz = (b.minZ + b.maxZ) / 2 - player.position.z;
+        const screenX = centerX + dx * mapScale;
+        const screenY = centerY + dz * mapScale;
+        const w = (b.maxX - b.minX) * mapScale;
+        const h = (b.maxZ - b.minZ) * mapScale;
+        minimapCtx.fillRect(screenX - w / 2, screenY - h / 2, w, h);
+      });
+
+      // 鍵の描画 (黄色)
+      minimapCtx.fillStyle = '#ffcc00';
+      keys.forEach(k => {
+        if (!k.collected) {
+          const dx = k.pos.x - player.position.x;
+          const dz = k.pos.z - player.position.z;
+          const screenX = centerX + dx * mapScale;
+          const screenY = centerY + dz * mapScale;
+          if (Math.hypot(screenX - centerX, screenY - centerY) < 70) {
+            minimapCtx.beginPath();
+            minimapCtx.arc(screenX, screenY, 3, 0, Math.PI * 2);
+            minimapCtx.fill();
+          }
+        }
+      });
+
+      // モンスターの描画 (赤色・不気味に点滅)
+      const renderMonsterDot = (mGroup, isBoss = false) => {
+        const dx = mGroup.position.x - player.position.x;
+        const dz = mGroup.position.z - player.position.z;
+        const screenX = centerX + dx * mapScale;
+        const screenY = centerY + dz * mapScale;
+
+        if (Math.hypot(screenX - centerX, screenY - centerY) < 70) {
+          minimapCtx.fillStyle = isBoss ? '#ff0000' : '#ff3366';
+          minimapCtx.beginPath();
+          minimapCtx.arc(screenX, screenY, isBoss ? 5 : 4, 0, Math.PI * 2);
+          minimapCtx.fill();
+        }
+      };
+
+      if (isChasing) renderMonsterDot(monster1.group);
+      renderMonsterDot(monster2.group);
+      if (isBossSpawned) renderMonsterDot(bossMonster.group, true);
+
+      // プレイヤー自身 (中央の緑色の点 & 向きの矢印)
+      minimapCtx.fillStyle = '#00ff88';
+      minimapCtx.beginPath();
+      minimapCtx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+      minimapCtx.fill();
+
+      // プレイヤーの視線方向ライン
+      const dirX = Math.sin(player.rotation.y);
+      const dirZ = Math.cos(player.rotation.y);
+      minimapCtx.strokeStyle = '#00ff88';
+      minimapCtx.lineWidth = 2;
+      minimapCtx.beginPath();
+      minimapCtx.moveTo(centerX, centerY);
+      minimapCtx.lineTo(centerX - dirX * 10, centerY - dirZ * 10);
+      minimapCtx.stroke();
     }
 
     // Main Loop
@@ -1104,7 +1204,6 @@
         if (isChasing) {
           monster1.group.lookAt(player.position.x, 0, player.position.z);
 
-          // 近づくほど速く・大きく鳴る心音
           heartbeatTimer += delta;
           const heartbeatInterval = Math.max(0.12, dist1 * 0.035);
           if (heartbeatTimer > heartbeatInterval) {
@@ -1156,6 +1255,9 @@
         // 近接音の更新
         const nearestMonsterDist = Math.min(dist1, dist2, distBoss);
         audio.updateChaseVolume(nearestMonsterDist);
+
+        // ミニマップの描画更新
+        renderMinimap();
       }
 
       renderer.render(scene, camera);
