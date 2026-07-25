@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Outdoor Horror Edition</title>
+  <title>死の市 - Extended Survival Horror</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -34,7 +34,7 @@
         transparent 1px,
         transparent 2px
       );
-      box-shadow: inset 0 0 160px rgba(0,0,0,0.92);
+      box-shadow: inset 0 0 180px rgba(0,0,0,0.95);
       z-index: 10;
     }
 
@@ -50,15 +50,56 @@
       display: none;
     }
 
+    /* UI（鍵カウント＆スタミナゲージ） */
     #ui {
       position: absolute;
       top: 20px; left: 20px;
-      color: #aaa;
+      color: #ddd;
       z-index: 20;
       pointer-events: none;
-      font-size: 13px;
+      font-size: 14px;
       letter-spacing: 2px;
       display: none;
+    }
+
+    .hud-box {
+      background: rgba(0, 0, 0, 0.65);
+      padding: 12px 16px;
+      border: 1px solid #444;
+      border-left: 4px solid #b30000;
+      margin-bottom: 8px;
+    }
+
+    #stamina-bar-bg {
+      width: 160px;
+      height: 8px;
+      background: #222;
+      border: 1px solid #555;
+      margin-top: 6px;
+    }
+
+    #stamina-bar {
+      width: 100%;
+      height: 100%;
+      background: #00b359;
+      transition: width 0.1s linear, background-color 0.2s;
+    }
+
+    /* メッセージ通知 */
+    #message-log {
+      position: absolute;
+      bottom: 40px;
+      width: 100%;
+      text-align: center;
+      color: #ff3333;
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      z-index: 20;
+      pointer-events: none;
+      text-shadow: 0 0 10px #000;
+      opacity: 0;
+      transition: opacity 0.5s ease;
     }
 
     /* タイトル画面 */
@@ -93,7 +134,7 @@
       font-size: 13px;
       color: #777;
       letter-spacing: 6px;
-      margin-bottom: 50px;
+      margin-bottom: 30px;
     }
 
     .btn-start {
@@ -116,9 +157,9 @@
     }
 
     .controls-hint {
-      margin-top: 40px;
+      margin-top: 35px;
       font-size: 11px;
-      color: #666;
+      color: #888;
       letter-spacing: 1px;
       line-height: 1.8;
       text-align: center;
@@ -157,6 +198,34 @@
       color: #ddd;
       letter-spacing: 4px;
     }
+
+    /* クリア画面 */
+    #clear-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 20, 10, 0.95);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .clear-title {
+      font-size: 64px;
+      color: #00ff88;
+      font-weight: bold;
+      letter-spacing: 12px;
+      text-shadow: 0 0 25px rgba(0, 255, 136, 0.8);
+      margin-bottom: 20px;
+    }
+
+    .clear-sub {
+      font-size: 15px;
+      color: #eee;
+      letter-spacing: 4px;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -164,21 +233,39 @@
 
   <div id="vhs-overlay"></div>
   <div id="crosshair"></div>
-  <div id="ui">『死の市』- 拡張街区</div>
+
+  <div id="ui">
+    <div class="hud-box">
+      <div>『死の市』からの生還</div>
+      <div style="margin-top:4px;">鍵: <span id="key-count" style="color:#ff3333; font-weight:bold;">0 / 3</span></div>
+    </div>
+    <div class="hud-box">
+      <div>STAMINA</div>
+      <div id="stamina-bar-bg"><div id="stamina-bar"></div></div>
+    </div>
+  </div>
+
+  <div id="message-log"></div>
 
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- EXPANDED STREETS -</div>
+    <div class="subtitle">- ESCAPE THE CITY -</div>
     <button class="btn-start" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
-      [W/A/S/D] 移動 | [マウス] 視点変更<br>
-      ※敵に捕まるとゲームオーバーになります
+      [W/A/S/D] 移動 | [Shift] ダッシュ（スタミナ消費） | [マウス] 視点変更<br>
+      【クリア目標】街に眠る <span style="color:#ff3333">3つの鍵</span> を拾い、最深部の扉から脱出せよ。<br>
+      ※背後から追ってくる「存在」に捕まるとゲームオーバー。
     </div>
   </div>
 
   <div id="gameover-overlay">
     <div class="go-title">G A M E   O V E R</div>
     <div class="go-sub">死の市に囚われ、あなたは帰らぬ者となった...</div>
+  </div>
+
+  <div id="clear-overlay">
+    <div class="clear-title">E S C A P E D</div>
+    <div class="clear-sub">あなたは無事に死の市から脱出した！</div>
   </div>
 
   <div id="canvas-container"></div>
@@ -249,6 +336,25 @@
         osc.stop(this.ctx.currentTime + 0.18);
       }
 
+      playKeyPickup() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.1); // E5
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
+      }
+
       playGameoverSound() {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
@@ -280,17 +386,22 @@
 
     const audio = new AudioSystem();
 
-    // --- 3Dグラフィック環境 ---
+    // --- DOM要素 ---
     const container = document.getElementById('canvas-container');
     const titleScreen = document.getElementById('title-screen');
     const startBtn = document.getElementById('start-btn');
     const crosshair = document.getElementById('crosshair');
     const ui = document.getElementById('ui');
+    const keyCountEl = document.getElementById('key-count');
+    const staminaBar = document.getElementById('stamina-bar');
+    const msgLog = document.getElementById('message-log');
     const gameoverOverlay = document.getElementById('gameover-overlay');
+    const clearOverlay = document.getElementById('clear-overlay');
 
+    // --- 3Dグラフィック環境 ---
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020205);
-    scene.fog = new THREE.FogExp2(0x020205, 0.05);
+    scene.fog = new THREE.FogExp2(0x020205, 0.045);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
     camera.rotation.order = 'YXZ';
@@ -308,73 +419,147 @@
     container.appendChild(renderer.domElement);
 
     // ライティング
-    const ambientLight = new THREE.AmbientLight(0x151b2d, 0.7);
+    const ambientLight = new THREE.AmbientLight(0x1a2035, 0.6);
     scene.add(ambientLight);
 
-    const moonLight = new THREE.DirectionalLight(0x4466aa, 0.6);
-    moonLight.position.set(20, 40, 20);
+    const moonLight = new THREE.DirectionalLight(0x4466aa, 0.5);
+    moonLight.position.set(20, 50, 20);
     moonLight.castShadow = true;
     scene.add(moonLight);
 
-    const flashlight = new THREE.SpotLight(0xfff3d6, 4.0, 25, Math.PI / 4, 0.4, 1);
+    const flashlight = new THREE.SpotLight(0xfff3d6, 4.5, 28, Math.PI / 4, 0.4, 1);
     camera.add(flashlight);
     flashlight.position.set(0, 0, 0);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // 床・街のマップ
+    // 道路（アスファルトの質感）
     const floorGeo = new THREE.PlaneGeometry(80, 160);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.9 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.95 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    function buildCity() {
-      const bldgMat = new THREE.MeshStandardMaterial({ color: 0x1a1a22, roughness: 0.8 });
-      const poleMat = new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: 0.6 });
+    // --- リアルな窓テクスチャの動的生成 ---
+    function generateBuildingTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#121216';
+      ctx.fillRect(0, 0, 256, 512);
+
+      // 窓を描く
+      const cols = 4;
+      const rows = 12;
+      const padX = 20; const padY = 15;
+      const w = (256 - padX * (cols + 1)) / cols;
+      const h = (512 - padY * (rows + 1)) / rows;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = padX + c * (w + padX);
+          const y = padY + r * (h + padY);
+
+          // 一部の窓だけ灯りが点いている
+          if (Math.random() < 0.22) {
+            ctx.fillStyle = Math.random() < 0.5 ? '#ffe082' : '#80d8ff';
+          } else {
+            ctx.fillStyle = '#08080c';
+          }
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = '#000';
+          ctx.strokeRect(x, y, w, h);
+        }
+      }
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    const bldgTexture = generateBuildingTexture();
+    bldgTexture.wrapS = THREE.RepeatWrapping;
+    bldgTexture.wrapT = THREE.RepeatWrapping;
+
+    // --- リアルな建物・街灯の生成 ---
+    function buildRealCity() {
+      const bldgMat = new THREE.MeshStandardMaterial({
+        map: bldgTexture,
+        roughness: 0.7,
+        metalness: 0.1
+      });
+
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x222228, metalness: 0.8, roughness: 0.3 });
+      const lampGlassMat = new THREE.MeshBasicMaterial({ color: 0xffd9aa });
 
       for (let z = -70; z <= 50; z += 16) {
-        const leftHeight = 9 + (Math.abs(z * 3) % 7);
-        const leftBldg = new THREE.Mesh(new THREE.BoxGeometry(12, leftHeight, 12), bldgMat);
-        leftBldg.position.set(-14, leftHeight / 2, z);
+        // 左側のビル
+        const leftH = 12 + (Math.abs(z * 3) % 8);
+        const leftBldg = new THREE.Mesh(new THREE.BoxGeometry(12, leftH, 12), bldgMat);
+        leftBldg.position.set(-14, leftH / 2, z);
         leftBldg.castShadow = true;
         leftBldg.receiveShadow = true;
         scene.add(leftBldg);
 
-        const rightHeight = 10 + (Math.abs(z * 5) % 8);
-        const rightBldg = new THREE.Mesh(new THREE.BoxGeometry(12, rightHeight, 12), bldgMat);
-        rightBldg.position.set(14, rightHeight / 2, z);
+        // ビル屋上の構造物（受水槽や室外機風の箱）
+        const roofBox = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 3), poleMat);
+        roofBox.position.set(-14, leftH + 1, z);
+        scene.add(roofBox);
+
+        // 右側のビル
+        const rightH = 10 + (Math.abs(z * 5) % 10);
+        const rightBldg = new THREE.Mesh(new THREE.BoxGeometry(12, rightH, 12), bldgMat);
+        rightBldg.position.set(14, rightH / 2, z);
         rightBldg.castShadow = true;
         rightBldg.receiveShadow = true;
         scene.add(rightBldg);
       }
 
+      // リアルな街灯（アーム構造付き）
       for (let z = -60; z <= 40; z += 20) {
-        const poleL = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 8, 8), poleMat);
-        poleL.position.set(-6.5, 4, z);
-        scene.add(poleL);
+        const createLamp = (x, zPos, dir) => {
+          const group = new THREE.Group();
 
-        const lightL = new THREE.PointLight(0xffb84d, 1.2, 12);
-        lightL.position.set(-6.0, 7.5, z);
-        scene.add(lightL);
+          // 支柱
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 7.5, 12), poleMat);
+          pole.position.y = 3.75;
+          group.add(pole);
 
-        const poleR = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 8, 8), poleMat);
-        poleR.position.set(6.5, 4, z + 10);
-        scene.add(poleR);
+          // 横アーム
+          const arm = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.08), poleMat);
+          arm.position.set(dir * 0.5, 7.2, 0);
+          group.add(arm);
 
-        const lightR = new THREE.PointLight(0xffb84d, 1.2, 12);
-        lightR.position.set(6.0, 7.5, z + 10);
-        scene.add(lightR);
+          // ランプのかさ＆電球
+          const head = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.2, 8), poleMat);
+          head.position.set(dir * 1.0, 7.1, 0);
+          group.add(head);
+
+          const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), lampGlassMat);
+          bulb.position.set(dir * 1.0, 6.95, 0);
+          group.add(bulb);
+
+          // 光源
+          const light = new THREE.PointLight(0xffb84d, 1.4, 14);
+          light.position.set(dir * 1.0, 6.8, 0);
+          light.castShadow = true;
+          group.add(light);
+
+          group.position.set(x, 0, zPos);
+          scene.add(group);
+        };
+
+        createLamp(-6.5, z, 1);
+        createLamp(6.5, z + 10, -1);
       }
     }
-    buildCity();
+    buildRealCity();
 
+    // 街の最深部：脱出の扉と看板
     let signLight;
-    function createMainSign() {
+    let exitDoor;
+    function createMainSignAndDoor() {
       const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 256;
+      canvas.width = 512; canvas.height = 256;
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#050202';
       ctx.fillRect(0, 0, 512, 256);
@@ -393,10 +578,50 @@
       signLight = new THREE.PointLight(0xff0000, 2.5, 15);
       signLight.position.set(0, 5, -53);
       scene.add(signLight);
-    }
-    createMainSign();
 
-    // モンスター
+      // 脱出用扉
+      const doorGeo = new THREE.BoxGeometry(3, 5, 0.2);
+      const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8, roughness: 0.2 });
+      exitDoor = new THREE.Mesh(doorGeo, doorMat);
+      exitDoor.position.set(0, 2.5, -62);
+      scene.add(exitDoor);
+
+      // 扉の上の警告灯
+      const doorLight = new THREE.PointLight(0x00ff88, 1.0, 8);
+      doorLight.position.set(0, 5.2, -61);
+      scene.add(doorLight);
+    }
+    createMainSignAndDoor();
+
+    // --- キーアイテム（収集要素） ---
+    const keys = [];
+    const keyPositions = [
+      new THREE.Vector3(-4.5, 0.8, 10),
+      new THREE.Vector3(4.5, 0.8, -15),
+      new THREE.Vector3(-4.0, 0.8, -40)
+    ];
+
+    function spawnKeys() {
+      keys.forEach(k => scene.remove(k.mesh));
+      keys.length = 0;
+
+      const keyGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 16);
+      const keyMat = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0x660000, roughness: 0.3 });
+
+      keyPositions.forEach(pos => {
+        const mesh = new THREE.Mesh(keyGeo, keyMat);
+        mesh.position.copy(pos);
+        scene.add(mesh);
+
+        const pointLight = new THREE.PointLight(0xff0000, 1.2, 4);
+        pointLight.position.copy(pos);
+        scene.add(pointLight);
+
+        keys.push({ mesh, light: pointLight, collected: false });
+      });
+    }
+
+    // --- モンスター ---
     const monsterGroup = new THREE.Group();
     const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
 
@@ -422,22 +647,47 @@
     monsterGroup.position.set(0, 0, -65);
     scene.add(monsterGroup);
 
-    // --- ゲーム進行＆ゲームオーバー処理 ---
+    // --- プレイヤーステータス ＆ 操作管理 ---
     let isPlaying = false;
     let isChasing = false;
     let isGameOver = false;
+    let isCleared = false;
+
+    let keysCollectedCount = 0;
+    let stamina = 100;
+    const maxStamina = 100;
+    let isExhausted = false;
 
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let isSprinting = false;
     let heartbeatTimer = 0;
+
+    function showMessage(msg) {
+      msgLog.textContent = msg;
+      msgLog.style.opacity = '1';
+      setTimeout(() => { msgLog.style.opacity = '0'; }, 2500);
+    }
 
     function resetGame() {
       player.position.set(0, 1.6, 25);
       player.rotation.set(0, 0, 0);
       camera.rotation.set(0, 0, 0);
       monsterGroup.position.set(0, 0, -65);
+
       isChasing = false;
       isGameOver = false;
+      isCleared = false;
+      keysCollectedCount = 0;
+      stamina = maxStamina;
+      isExhausted = false;
+
+      keyCountEl.textContent = `0 / ${keyPositions.length}`;
+      staminaBar.style.width = '100%';
+      staminaBar.style.backgroundColor = '#00b359';
+
+      spawnKeys();
       gameoverOverlay.style.display = 'none';
+      clearOverlay.style.display = 'none';
     }
 
     startBtn.addEventListener('click', () => {
@@ -446,13 +696,13 @@
     });
 
     document.addEventListener('pointerlockchange', () => {
-      if (document.pointerLockElement === document.body && !isGameOver) {
+      if (document.pointerLockElement === document.body && !isGameOver && !isCleared) {
         isPlaying = true;
         titleScreen.style.display = 'none';
         crosshair.style.display = 'block';
         ui.style.display = 'block';
         audio.startBGM();
-      } else if (!isGameOver) {
+      } else if (!isGameOver && !isCleared) {
         isPlaying = false;
         titleScreen.style.display = 'flex';
         crosshair.style.display = 'none';
@@ -461,9 +711,9 @@
       }
     });
 
-    // 視点移動
+    // マウス視点移動
     document.addEventListener('mousemove', (e) => {
-      if (!isPlaying || isGameOver) return;
+      if (!isPlaying || isGameOver || isCleared) return;
 
       const sensitivity = 0.002;
       player.rotation.y -= e.movementX * sensitivity;
@@ -472,12 +722,15 @@
       camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
     });
 
+    // キーボード操作
     document.addEventListener('keydown', (e) => {
       switch (e.code) {
         case 'KeyW': moveForward = true; break;
         case 'KeyS': moveBackward = true; break;
         case 'KeyA': moveLeft = true; break;
         case 'KeyD': moveRight = true; break;
+        case 'ShiftLeft':
+        case 'ShiftRight': isSprinting = true; break;
       }
     });
 
@@ -487,12 +740,14 @@
         case 'KeyS': moveBackward = false; break;
         case 'KeyA': moveLeft = false; break;
         case 'KeyD': moveRight = false; break;
+        case 'ShiftLeft':
+        case 'ShiftRight': isSprinting = false; break;
       }
     });
 
-    // 【ゲームオーバー処理】敵に接触した場合に発動
+    // ゲームオーバー処理
     function triggerGameOver() {
-      if (isGameOver) return;
+      if (isGameOver || isCleared) return;
       isGameOver = true;
       isPlaying = false;
       document.exitPointerLock();
@@ -500,25 +755,41 @@
       audio.stopBGM();
       audio.playGameoverSound();
 
-      // モンスターをカメラ目の前に瞬間配置
       monsterGroup.position.copy(player.position);
       monsterGroup.position.z -= 0.8;
       camera.lookAt(monsterGroup.position.x, 2.5, monsterGroup.position.z);
 
-      // ゲームオーバーUI表示
       gameoverOverlay.style.display = 'flex';
 
-      // 3秒後にタイトル画面へ復帰
       setTimeout(() => {
         gameoverOverlay.style.display = 'none';
         titleScreen.style.display = 'flex';
         crosshair.style.display = 'none';
         ui.style.display = 'none';
         resetGame();
-      }, 3000);
+      }, 3500);
     }
 
-    // --- アニメーションループ ---
+    // ゲームクリア処理
+    function triggerGameClear() {
+      if (isCleared || isGameOver) return;
+      isCleared = true;
+      isPlaying = false;
+      document.exitPointerLock();
+
+      audio.stopBGM();
+      clearOverlay.style.display = 'flex';
+
+      setTimeout(() => {
+        clearOverlay.style.display = 'none';
+        titleScreen.style.display = 'flex';
+        crosshair.style.display = 'none';
+        ui.style.display = 'none';
+        resetGame();
+      }, 4000);
+    }
+
+    // --- アニメーション＆メイン更新ループ ---
     let clock = new THREE.Clock();
 
     function animate() {
@@ -527,9 +798,41 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      if (isPlaying && !isGameOver) {
-        const moveSpeed = 3.6 * delta;
-        
+      // 鍵の回転アニメーション
+      keys.forEach(k => {
+        if (!k.collected) {
+          k.mesh.rotation.y += delta * 2.0;
+          k.mesh.position.y = k.mesh.position.y = 0.8 + Math.sin(time * 3) * 0.1;
+        }
+      });
+
+      if (isPlaying && !isGameOver && !isCleared) {
+        // --- スタミナ ＆ 移動処理 ---
+        const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+        let speedMultiplier = 1.0;
+
+        if (isSprinting && isMoving && !isExhausted) {
+          speedMultiplier = 1.85; // ダッシュ速度
+          stamina -= 35 * delta;
+          if (stamina <= 0) {
+            stamina = 0;
+            isExhausted = true;
+            staminaBar.style.backgroundColor = '#ff3333';
+          }
+        } else {
+          stamina += 20 * delta;
+          if (stamina >= maxStamina) {
+            stamina = maxStamina;
+            isExhausted = false;
+            staminaBar.style.backgroundColor = '#00b359';
+          }
+        }
+
+        // UIのスタミナ更新
+        const staminaPct = (stamina / maxStamina) * 100;
+        staminaBar.style.width = `${staminaPct}%`;
+
+        const moveSpeed = 3.3 * speedMultiplier * delta;
         if (moveForward) player.translateZ(-moveSpeed);
         if (moveBackward) player.translateZ(moveSpeed);
         if (moveLeft) player.translateX(-moveSpeed);
@@ -537,45 +840,73 @@
 
         player.position.y = 1.6;
 
-        // エリアの移動上限
+        // 移動制限
         player.position.x = Math.max(-6.0, Math.min(6.0, player.position.x));
-        player.position.z = Math.max(-68, Math.min(35, player.position.z));
+        player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
         // 懐中電灯ブレ
-        if (moveForward || moveBackward || moveLeft || moveRight) {
-          flashlight.position.y = Math.sin(time * 10) * 0.02;
-          flashlight.position.x = Math.cos(time * 5) * 0.02;
+        if (isMoving) {
+          const bobFreq = isSprinting ? 14 : 9;
+          flashlight.position.y = Math.sin(time * bobFreq) * 0.025;
+          flashlight.position.x = Math.cos(time * (bobFreq / 2)) * 0.025;
         }
 
-        // モンスターAI
+        // --- 鍵取得の当たり判定 ---
+        keys.forEach(k => {
+          if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.4) {
+            k.collected = true;
+            scene.remove(k.mesh);
+            scene.remove(k.light);
+            keysCollectedCount++;
+            keyCountEl.textContent = `${keysCollectedCount} / ${keyPositions.length}`;
+            audio.playKeyPickup();
+
+            if (keysCollectedCount < keyPositions.length) {
+              showMessage(`鍵を手に入れた (${keysCollectedCount}/${keyPositions.length})`);
+            } else {
+              showMessage('すべての鍵が集まった！最深部の扉から脱出せよ！');
+            }
+          }
+        });
+
+        // --- 脱出判定 ---
+        if (player.position.z < -60) {
+          if (keysCollectedCount >= keyPositions.length) {
+            triggerGameClear();
+          } else {
+            showMessage('扉は鍵がかかっている... (鍵が3つ必要)');
+          }
+        }
+
+        // --- モンスターAI ---
         const distanceToMonster = player.position.distanceTo(monsterGroup.position);
 
         if (player.position.z < 5 && !isChasing) {
           isChasing = true;
+          showMessage('何かが目覚めた...逃げろ！');
         }
 
         if (isChasing) {
           monsterGroup.lookAt(player.position.x, 0, player.position.z);
-          
+
           head.position.x = Math.sin(time * 35) * 0.06;
           head.position.z = Math.cos(time * 35) * 0.06;
 
           heartbeatTimer += delta;
-          const heartbeatInterval = Math.max(0.25, distanceToMonster * 0.06);
+          const heartbeatInterval = Math.max(0.22, distanceToMonster * 0.055);
           if (heartbeatTimer > heartbeatInterval) {
             audio.playHeartbeat();
             heartbeatTimer = 0;
           }
 
-          const chaseSpeed = 3.2 * delta;
+          const chaseSpeed = 3.15 * delta;
           const chaseDir = new THREE.Vector3().subVectors(player.position, monsterGroup.position);
           chaseDir.y = 0;
           chaseDir.normalize();
 
           monsterGroup.position.addScaledVector(chaseDir, chaseSpeed);
 
-          // 捕獲判定：1.5m以内に近づいたらゲームオーバー発生
-          if (distanceToMonster < 1.5) {
+          if (distanceToMonster < 1.4) {
             triggerGameOver();
           }
         }
