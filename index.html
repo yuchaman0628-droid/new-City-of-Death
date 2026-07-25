@@ -279,7 +279,7 @@
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点変更<br>
       【目標】街を徘徊する異形を避け、<span style="color:#ff3333">3つの鍵</span> を見つけて脱出せよ。<br>
-      建物を回避しながら、モンスターに捕まらないように進んでください。
+      化け物に触れると即死亡します。建物を壁にして逃げ切りましょう。
     </div>
   </div>
 
@@ -527,7 +527,7 @@
 
     const bldgTexture = generateBuildingTexture();
 
-    // --- 【建物の当たり判定用データの保持】 ---
+    // --- 建物の当たり判定データ ---
     const buildingColliders = [];
 
     // マップ構築
@@ -547,7 +547,6 @@
           bldg.position.set(posX, h / 2, z);
           scene.add(bldg);
 
-          // 当たり判定用データとして登録 (Bounding Box)
           buildingColliders.push({
             minX: posX - w / 2,
             maxX: posX + w / 2,
@@ -605,7 +604,7 @@
     }
     createMainSignAndDoor();
 
-    // 鍵のモデル
+    // 鍵モデル
     function createKey3DModel() {
       const keyGroup = new THREE.Group();
       const goldMat = new THREE.MeshStandardMaterial({
@@ -660,7 +659,7 @@
       });
     }
 
-    // モンスターモデル関数
+    // モンスター生成
     function createMonster(eyeColorHex = 0xff0000) {
       const group = new THREE.Group();
       const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
@@ -718,7 +717,6 @@
     let isSprinting = false;
     let heartbeatTimer = 0;
 
-    // ジャンプアクションアニメーション変数
     let isJumpingOver = false;
     let jumpTime = 0;
 
@@ -828,20 +826,43 @@
       if (e.target !== retryBtn) returnToTitle();
     });
 
-    // --- 【建物の衝突判定ロジック】 ---
-    function checkBuildingCollision(newX, newZ) {
-      const radius = 0.6; // プレイヤーの当たり判定半径
+    // --- 建物（壁）判定関数 ---
+    function checkBuildingCollision(newX, newZ, radius = 0.6) {
       for (let i = 0; i < buildingColliders.length; i++) {
         const b = buildingColliders[i];
         if (newX + radius > b.minX && newX - radius < b.maxX &&
             newZ + radius > b.minZ && newZ - radius < b.maxZ) {
-          return true; // 衝突検出
+          return true;
         }
       }
       return false;
     }
 
-    // --- 【強化】ジャンプアクション風ゲームオーバー演出 ---
+    // --- 【新機能】モンスターと壁の衝突移動ロジック（滑り移動） ---
+    function moveMonsterWithCollision(monsterGroup, moveVec, radius = 0.5) {
+      const oldX = monsterGroup.position.x;
+      const oldZ = monsterGroup.position.z;
+
+      const targetX = oldX + moveVec.x;
+      const targetZ = oldZ + moveVec.z;
+
+      // XZ両方で試す
+      if (!checkBuildingCollision(targetX, targetZ, radius)) {
+        monsterGroup.position.x = targetX;
+        monsterGroup.position.z = targetZ;
+      } else {
+        // X移動のみ試す（壁を滑る）
+        if (!checkBuildingCollision(targetX, oldZ, radius)) {
+          monsterGroup.position.x = targetX;
+        } 
+        // Z移動のみ試す（壁を滑る）
+        else if (!checkBuildingCollision(oldX, targetZ, radius)) {
+          monsterGroup.position.z = targetZ;
+        }
+      }
+    }
+
+    // --- ゲームオーバー演出（ジャンプアクション＆死亡） ---
     function triggerGameOver(caughtMonsterGroup) {
       if (isGameOver || isCleared) return;
       isGameOver = true;
@@ -852,7 +873,6 @@
       audio.playGameoverSound();
       triggerRedFlash();
 
-      // モンスターをすぐ眼前に配置
       caughtMonsterGroup.position.copy(player.position);
       caughtMonsterGroup.position.z -= 0.8;
 
@@ -888,10 +908,9 @@
         }
       });
 
-      // 【捕まった際のジャンプ・驚かせカメラアクション】
+      // 死亡時ジャンプ演出
       if (isJumpingOver) {
         jumpTime += delta * 5;
-        // 上に跳ね上がりながら下（モンスターの顔）を見下ろすような激しいシェイク
         player.position.y = 1.6 + Math.sin(jumpTime) * 1.2;
         camera.rotation.x = -Math.PI / 3 + (Math.random() - 0.5) * 0.2;
         camera.rotation.z = (Math.random() - 0.5) * 0.3;
@@ -903,7 +922,7 @@
       }
 
       if (isPlaying && !isGameOver && !isCleared) {
-        // 移動計算
+        // プレイヤー移動
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         let speedMultiplier = 1.0;
 
@@ -937,18 +956,13 @@
 
         player.position.y = 1.6;
 
-        // 【建物当たり判定チェック】
-        if (checkBuildingCollision(player.position.x, player.position.z)) {
-          // X軸移動だけ試す
-          if (!checkBuildingCollision(player.position.x, oldZ)) {
+        // プレイヤーの建物衝突
+        if (checkBuildingCollision(player.position.x, player.position.z, 0.6)) {
+          if (!checkBuildingCollision(player.position.x, oldZ, 0.6)) {
             player.position.z = oldZ;
-          } 
-          // Z軸移動だけ試す
-          else if (!checkBuildingCollision(oldX, player.position.z)) {
+          } else if (!checkBuildingCollision(oldX, player.position.z, 0.6)) {
             player.position.x = oldX;
-          } 
-          // 両方だめなら元の位置に戻す（壁に引っかかる）
-          else {
+          } else {
             player.position.x = oldX;
             player.position.z = oldZ;
           }
@@ -958,7 +972,7 @@
         player.position.x = Math.max(-42.0, Math.min(42.0, player.position.x));
         player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
-        // 鍵取得判定
+        // 鍵判定
         keys.forEach(k => {
           if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.5) {
             k.collected = true;
@@ -985,7 +999,7 @@
           }
         }
 
-        // モンスター1（追跡型）
+        // --- 【モンスター1（追跡型）のAI＆衝突判定】 ---
         const dist1 = player.position.distanceTo(monster1.group.position);
 
         if (player.position.z < 10 && !isChasing) {
@@ -1009,25 +1023,33 @@
           chaseDir.y = 0;
           chaseDir.normalize();
 
-          monster1.group.position.addScaledVector(chaseDir, chaseSpeed);
+          // 建物の当たり判定を適用して移動
+          const moveStep = chaseDir.multiplyScalar(chaseSpeed);
+          moveMonsterWithCollision(monster1.group, moveStep, 0.5);
 
+          // 接触判定（当たったら死ぬ）
           if (dist1 < 1.5) triggerGameOver(monster1.group);
         }
 
-        // モンスター2（巡回型）
+        // --- 【モンスター2（巡回型）のAI＆衝突判定】 ---
         const dist2 = player.position.distanceTo(monster2.group.position);
         monster2.head.position.x = Math.sin(time * 20) * 0.05;
 
+        let patrolDirX = 0;
         if (monster2.group.position.x < patrolTargetX) {
-          monster2.group.position.x += patrolSpeed * delta;
+          patrolDirX = patrolSpeed * delta;
           monster2.group.rotation.y = Math.PI / 2;
           if (monster2.group.position.x >= patrolTargetX) patrolTargetX = -30;
         } else {
-          monster2.group.position.x -= patrolSpeed * delta;
+          patrolDirX = -patrolSpeed * delta;
           monster2.group.rotation.y = -Math.PI / 2;
           if (monster2.group.position.x <= patrolTargetX) patrolTargetX = 30;
         }
 
+        // 建物の当たり判定を適用して移動
+        moveMonsterWithCollision(monster2.group, new THREE.Vector3(patrolDirX, 0, 0), 0.5);
+
+        // 接触判定（当たったら死ぬ）
         if (dist2 < 1.6) triggerGameOver(monster2.group);
       }
 
