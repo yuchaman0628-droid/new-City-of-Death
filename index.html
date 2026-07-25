@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Hard & Wide Edition</title>
+  <title>死の市 - GameOver Enhanced Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -102,6 +102,27 @@
       transition: opacity 0.5s ease;
     }
 
+    /* 共通ボタンデザイン */
+    .btn-action {
+      background: transparent;
+      border: 1px solid #666;
+      color: #ddd;
+      padding: 14px 42px;
+      font-size: 18px;
+      font-family: inherit;
+      letter-spacing: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+    }
+
+    .btn-action:hover {
+      background: #800000;
+      color: #fff;
+      border-color: #f00;
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.8);
+    }
+
     /* タイトル画面 */
     #title-screen {
       position: absolute;
@@ -134,30 +155,11 @@
       font-size: 13px;
       color: #777;
       letter-spacing: 6px;
-      margin-bottom: 30px;
-    }
-
-    .btn-start {
-      background: transparent;
-      border: 1px solid #666;
-      color: #ddd;
-      padding: 14px 42px;
-      font-size: 18px;
-      font-family: inherit;
-      letter-spacing: 6px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-start:hover {
-      background: #800000;
-      color: #fff;
-      border-color: #f00;
-      box-shadow: 0 0 25px rgba(255, 0, 0, 0.8);
+      margin-bottom: 10px;
     }
 
     .controls-hint {
-      margin-top: 35px;
+      margin-top: 25px;
       font-size: 11px;
       color: #888;
       letter-spacing: 1px;
@@ -165,38 +167,47 @@
       text-align: center;
     }
 
-    /* ゲームオーバー画面 */
+    /* ゲームオーバー画面（完成版） */
     #gameover-overlay {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(60, 0, 0, 0.95);
+      background-color: rgba(40, 0, 0, 0.96);
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 50;
-      animation: goFlash 0.1s infinite alternate;
+      animation: goFlash 0.15s infinite alternate;
     }
 
     @keyframes goFlash {
-      0% { background-color: rgba(90, 0, 0, 0.95); }
+      0% { background-color: rgba(60, 0, 0, 0.96); }
       100% { background-color: rgba(10, 0, 0, 0.98); }
     }
 
     .go-title {
-      font-size: 72px;
-      color: #ff1111;
+      font-size: 80px;
+      color: #ff0000;
       font-weight: bold;
-      letter-spacing: 14px;
+      letter-spacing: 16px;
       text-shadow: 0 0 20px #000, 0 0 40px #f00;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .go-sub {
-      font-size: 15px;
-      color: #ddd;
+      font-size: 16px;
+      color: #ccc;
       letter-spacing: 4px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 5px #000;
+    }
+
+    .go-hint {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #888;
+      letter-spacing: 2px;
     }
 
     /* クリア画面 */
@@ -247,25 +258,31 @@
 
   <div id="message-log"></div>
 
+  <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
     <div class="subtitle">- HARD & WIDE STREETS -</div>
-    <button class="btn-start" id="start-btn">街 に 入 る</button>
+    <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
-      [W/A/S/D] 移動 | [Shift] ダッシュ（スタミナ注意） | [マウス] 視点変更<br>
-      【クリア目標】横に広がった広い街から <span style="color:#ff3333">3つの鍵</span> を探し、最深部から脱出せよ。<br>
-      ※高速で追ってくる「存在」に捕まるとゲームオーバー（タイトルへ戻ります）。
+      [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点変更<br>
+      【目標】横に広がる街から <span style="color:#ff3333">3つの鍵</span> を見つけ、最深部から脱出せよ。<br>
+      モンスターに捕まるとゲームオーバーになります。
     </div>
   </div>
 
+  <!-- ゲームオーバー画面（追加・強化） -->
   <div id="gameover-overlay">
     <div class="go-title">G A M E   O V E R</div>
-    <div class="go-sub">死の市に囚われ、あなたは帰らぬ者となった...</div>
+    <div class="go-sub">死の市に囚われ、あなたの意識は闇へと消えた...</div>
+    <button class="btn-action" id="retry-btn">タイトルへ戻る</button>
+    <div class="go-hint">[ Space ] または画面クリックでも戻れます</div>
   </div>
 
+  <!-- クリア画面 -->
   <div id="clear-overlay">
     <div class="clear-title">E S C A P E D</div>
     <div class="clear-sub">あなたは無事に死の市から脱出した！</div>
+    <button class="btn-action" id="clear-title-btn">タイトルへ戻る</button>
   </div>
 
   <div id="canvas-container"></div>
@@ -361,17 +378,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(450, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + 1.8);
+        osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(25, this.ctx.currentTime + 2.0);
 
         gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.8);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 2.0);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 1.8);
+        osc.stop(this.ctx.currentTime + 2.0);
       }
 
       stopBGM() {
@@ -390,6 +407,8 @@
     const container = document.getElementById('canvas-container');
     const titleScreen = document.getElementById('title-screen');
     const startBtn = document.getElementById('start-btn');
+    const retryBtn = document.getElementById('retry-btn');
+    const clearTitleBtn = document.getElementById('clear-title-btn');
     const crosshair = document.getElementById('crosshair');
     const ui = document.getElementById('ui');
     const keyCountEl = document.getElementById('key-count');
@@ -398,7 +417,7 @@
     const gameoverOverlay = document.getElementById('gameover-overlay');
     const clearOverlay = document.getElementById('clear-overlay');
 
-    // --- 3Dグラフィック環境（軽量化設定） ---
+    // --- 3Dグラフィック環境（軽量設定） ---
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020205);
     scene.fog = new THREE.FogExp2(0x020205, 0.04);
@@ -413,10 +432,9 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); // ピクセル比を抑えて動作を軽量化
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
     container.appendChild(renderer.domElement);
 
-    // ライティング（軽量化のためPointLightを整理）
     const ambientLight = new THREE.AmbientLight(0x222a3d, 0.8);
     scene.add(ambientLight);
 
@@ -430,14 +448,14 @@
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // 床（幅180に拡大：横方向へ広大化）
+    // 床
     const floorGeo = new THREE.PlaneGeometry(180, 160);
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.9 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // テクスチャ生成
+    // テクスチャ
     function generateBuildingTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 128; canvas.height = 256;
@@ -469,15 +487,14 @@
 
     const bldgTexture = generateBuildingTexture();
 
-    // --- マップ生成（横方向X: -45 ～ 45 まで広い街並み） ---
+    // マップ構築
     function buildWideCity() {
       const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.8 });
       const poleMat = new THREE.MeshStandardMaterial({ color: 0x222228 });
 
-      // 建物を横にも配置
       for (let z = -70; z <= 50; z += 18) {
         for (let x = -45; x <= 45; x += 30) {
-          if (Math.abs(x) < 8 && z > -50) continue; // 中央メイン通りを確保
+          if (Math.abs(x) < 8 && z > -50) continue;
 
           const h = 10 + (Math.abs(x * z) % 8);
           const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), bldgMat);
@@ -486,7 +503,6 @@
         }
       }
 
-      // 街灯（間引きして軽量化）
       for (let z = -60; z <= 40; z += 25) {
         [-18, 0, 18].forEach(xPos => {
           const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 7, 6), poleMat);
@@ -501,7 +517,7 @@
     }
     buildWideCity();
 
-    // 街の最深部：脱出扉
+    // 看板・扉
     let exitDoor;
     function createMainSignAndDoor() {
       const canvas = document.createElement('canvas');
@@ -535,12 +551,12 @@
     }
     createMainSignAndDoor();
 
-    // --- キーアイテム（横の広いマップに配置） ---
+    // 鍵配置
     const keys = [];
     const keyPositions = [
-      new THREE.Vector3(-32, 0.8, 10),  // 横奥（左）
-      new THREE.Vector3(32, 0.8, -10),  // 横奥（右）
-      new THREE.Vector3(-15, 0.8, -42)  // 最深部付近（左）
+      new THREE.Vector3(-32, 0.8, 10),
+      new THREE.Vector3(32, 0.8, -10),
+      new THREE.Vector3(-15, 0.8, -42)
     ];
 
     function spawnKeys() {
@@ -563,7 +579,7 @@
       });
     }
 
-    // --- モンスター ---
+    // モンスター
     const monsterGroup = new THREE.Group();
     const monsterMat = new THREE.MeshStandardMaterial({ color: 0x08080a, roughness: 0.9 });
 
@@ -587,7 +603,7 @@
     monsterGroup.position.set(0, 0, -65);
     scene.add(monsterGroup);
 
-    // --- ゲーム状態管理 ---
+    // ゲーム状態
     let isPlaying = false;
     let isChasing = false;
     let isGameOver = false;
@@ -608,6 +624,15 @@
       setTimeout(() => { msgLog.style.opacity = '0'; }, 2500);
     }
 
+    function returnToTitle() {
+      gameoverOverlay.style.display = 'none';
+      clearOverlay.style.display = 'none';
+      titleScreen.style.display = 'flex';
+      crosshair.style.display = 'none';
+      ui.style.display = 'none';
+      resetGame();
+    }
+
     function resetGame() {
       player.position.set(0, 1.6, 25);
       player.rotation.set(0, 0, 0);
@@ -626,8 +651,6 @@
       staminaBar.style.backgroundColor = '#00b359';
 
       spawnKeys();
-      gameoverOverlay.style.display = 'none';
-      clearOverlay.style.display = 'none';
     }
 
     startBtn.addEventListener('click', () => {
@@ -635,6 +658,10 @@
       document.body.requestPointerLock();
     });
 
+    retryBtn.addEventListener('click', returnToTitle);
+    clearTitleBtn.addEventListener('click', returnToTitle);
+
+    // ポインターロック連携
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement === document.body && !isGameOver && !isCleared) {
         isPlaying = true;
@@ -651,7 +678,7 @@
       }
     });
 
-    // マウス視点移動
+    // 視点移動
     document.addEventListener('mousemove', (e) => {
       if (!isPlaying || isGameOver || isCleared) return;
 
@@ -662,8 +689,13 @@
       camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
     });
 
-    // キー操作
+    // キーボード操作
     document.addEventListener('keydown', (e) => {
+      if (isGameOver) {
+        if (e.code === 'Space' || e.code === 'Enter') returnToTitle();
+        return;
+      }
+
       switch (e.code) {
         case 'KeyW': moveForward = true; break;
         case 'KeyS': moveBackward = true; break;
@@ -685,7 +717,12 @@
       }
     });
 
-    // 【即時ゲームオーバー ＆ タイトル画面戻り処理】
+    // ゲームオーバー画面でのクリックで復帰
+    gameoverOverlay.addEventListener('click', (e) => {
+      if (e.target !== retryBtn) returnToTitle();
+    });
+
+    // 【ゲームオーバー処理】
     function triggerGameOver() {
       if (isGameOver || isCleared) return;
       isGameOver = true;
@@ -695,24 +732,16 @@
       audio.stopBGM();
       audio.playGameoverSound();
 
-      // モンスターを目の前へ配置
+      // モンスターを目の前に描画
       monsterGroup.position.copy(player.position);
       monsterGroup.position.z -= 0.8;
       camera.lookAt(monsterGroup.position.x, 2.5, monsterGroup.position.z);
 
+      // ゲームオーバー画面表示（手動で戻るまで維持）
       gameoverOverlay.style.display = 'flex';
-
-      // 2.5秒後にタイトル画面へ復帰
-      setTimeout(() => {
-        gameoverOverlay.style.display = 'none';
-        titleScreen.style.display = 'flex';
-        crosshair.style.display = 'none';
-        ui.style.display = 'none';
-        resetGame();
-      }, 2500);
     }
 
-    // クリア処理
+    // 【クリア処理】
     function triggerGameClear() {
       if (isCleared || isGameOver) return;
       isCleared = true;
@@ -721,17 +750,9 @@
 
       audio.stopBGM();
       clearOverlay.style.display = 'flex';
-
-      setTimeout(() => {
-        clearOverlay.style.display = 'none';
-        titleScreen.style.display = 'flex';
-        crosshair.style.display = 'none';
-        ui.style.display = 'none';
-        resetGame();
-      }, 3500);
     }
 
-    // --- アニメーション＆メイン更新ループ ---
+    // --- メインループ ---
     let clock = new THREE.Clock();
 
     function animate() {
@@ -740,7 +761,7 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // 鍵の回転
+      // 鍵アニメーション
       keys.forEach(k => {
         if (!k.collected) {
           k.mesh.rotation.y += delta * 2.0;
@@ -748,20 +769,20 @@
       });
 
       if (isPlaying && !isGameOver && !isCleared) {
-        // --- スタミナ ＆ 移動処理（難易度高め） ---
+        // 移動・スタミナ
         const isMoving = moveForward || moveBackward || moveLeft || moveRight;
         let speedMultiplier = 1.0;
 
         if (isSprinting && isMoving && !isExhausted) {
-          speedMultiplier = 1.75; // ダッシュ速度
-          stamina -= 50 * delta; // スタミナ消費が早い
+          speedMultiplier = 1.75;
+          stamina -= 50 * delta;
           if (stamina <= 0) {
             stamina = 0;
             isExhausted = true;
             staminaBar.style.backgroundColor = '#ff3333';
           }
         } else {
-          stamina += 15 * delta; // 回復が遅い
+          stamina += 15 * delta;
           if (stamina >= maxStamina) {
             stamina = maxStamina;
             isExhausted = false;
@@ -779,11 +800,10 @@
 
         player.position.y = 1.6;
 
-        // 横マップ制限（X: -42 ～ 42 に大幅拡大）
         player.position.x = Math.max(-42.0, Math.min(42.0, player.position.x));
         player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
-        // 鍵取得の判定
+        // 鍵取得
         keys.forEach(k => {
           if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.5) {
             k.collected = true;
@@ -801,7 +821,7 @@
           }
         });
 
-        // 脱出判定
+        // 脱出
         if (player.position.z < -60 && Math.abs(player.position.x) < 4) {
           if (keysCollectedCount >= keyPositions.length) {
             triggerGameClear();
@@ -810,17 +830,16 @@
           }
         }
 
-        // --- モンスターAI（スピード大幅アップで難易度高） ---
+        // モンスターAI
         const distanceToMonster = player.position.distanceTo(monsterGroup.position);
 
         if (player.position.z < 10 && !isChasing) {
           isChasing = true;
-          showMessage('何かが目覚めた...！速い、逃げろ！');
+          showMessage('何かが目覚めた...！逃げろ！');
         }
 
         if (isChasing) {
           monsterGroup.lookAt(player.position.x, 0, player.position.z);
-
           head.position.x = Math.sin(time * 35) * 0.06;
 
           heartbeatTimer += delta;
@@ -830,7 +849,6 @@
             heartbeatTimer = 0;
           }
 
-          // 難易度強化：プレイヤーの通常移動よりも速いスピードで追跡
           const chaseSpeed = 3.8 * delta;
           const chaseDir = new THREE.Vector3().subVectors(player.position, monsterGroup.position);
           chaseDir.y = 0;
@@ -838,7 +856,7 @@
 
           monsterGroup.position.addScaledVector(chaseDir, chaseSpeed);
 
-          // 接触＝ゲームオーバー
+          // 捕獲判定
           if (distanceToMonster < 1.5) {
             triggerGameOver();
           }
