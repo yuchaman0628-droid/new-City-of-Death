@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>死の市 - Horror Game</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #000;
+      font-family: 'Courier New', Courier, serif, monospace;
+      user-select: none;
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+
+    /* レトロVHS・暗闇ノイズオーバーレイ */
+    #vhs-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.3),
+        rgba(0, 0, 0, 0.3) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      box-shadow: inset 0 0 150px rgba(0,0,0,0.95);
+      z-index: 10;
+    }
+
+    /* 照準 */
+    #crosshair {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 4px; height: 4px;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      pointer-events: none;
+      display: none;
+    }
+
+    #ui {
+      position: absolute;
+      top: 20px; left: 20px;
+      color: #666;
+      z-index: 20;
+      pointer-events: none;
+      font-size: 12px;
+      letter-spacing: 2px;
+      display: none;
+    }
+
+    /* タイトル画面・メニュー */
+    #title-screen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle, rgba(20,5,5,0.95) 0%, rgba(0,0,0,0.98) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 30;
+      color: #eee;
+    }
+
+    .game-title {
+      font-size: 64px;
+      color: #b00000;
+      letter-spacing: 12px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 15px rgba(255, 0, 0, 0.7), 3px 3px 0px #000;
+      animation: pulse 4s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.8; text-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
+      100% { opacity: 1; text-shadow: 0 0 25px rgba(255, 0, 0, 0.9), 0 0 5px rgba(255,255,255,0.5); }
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #777;
+      letter-spacing: 4px;
+      margin-bottom: 50px;
+    }
+
+    .btn-start {
+      background: transparent;
+      border: 1px solid #666;
+      color: #ccc;
+      padding: 12px 36px;
+      font-size: 18px;
+      font-family: inherit;
+      letter-spacing: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-start:hover {
+      background: #800000;
+      color: #fff;
+      border-color: #f00;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+    }
+
+    .controls-hint {
+      margin-top: 40px;
+      font-size: 11px;
+      color: #555;
+      letter-spacing: 1px;
+      line-height: 1.6;
+      text-align: center;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="vhs-overlay"></div>
+  <div id="crosshair"></div>
+  <div id="ui">『死の市』</div>
+
+  <!-- タイトル画面UI -->
+  <div id="title-screen">
+    <div class="game-title">死 の 市</div>
+    <div class="subtitle">- SHI NO ICHI -</div>
+    <button class="btn-start" id="start-btn">参 拝（ゲーム開始）</button>
+    <div class="controls-hint">
+      [W/A/S/D] 移動 | [マウス] 視点変更<br>
+      [ESC] 一時停止 / タイトルへ戻る
+    </div>
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <script>
+    // --- BGM・効果音の自動合成 (Web Audio API) ---
+    class AudioSystem {
+      constructor() {
+        this.ctx = null;
+        this.isPlaying = false;
+        this.oscillators = [];
+        this.gainNode = null;
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+
+        // マスターゲイン
+        this.gainNode = this.ctx.createGain();
+        this.gainNode.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        this.gainNode.connect(this.ctx.destination);
+      }
+
+      startBGM() {
+        this.init();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        if (this.isPlaying) return;
+        this.isPlaying = true;
+
+        // 不気味な低音ドローン（基底音）
+        const osc1 = this.ctx.createOscillator();
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(45, this.ctx.currentTime); // 低周波
+
+        // わずかにズレた低音（うねりを作る）
+        const osc2 = this.ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(46.5, this.ctx.currentTime);
+
+        // ローパスフィルター（音をこもらせて暗闇感を出す）
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(180, this.ctx.currentTime);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(this.gainNode);
+
+        osc1.start();
+        osc2.start();
+        this.oscillators = [osc1, osc2];
+
+        // ランダムな不気味な金属アンビエント音
+        this.scheduleAmbientSounds();
+      }
+
+      scheduleAmbientSounds() {
+        if (!this.isPlaying) return;
+
+        // 不定期に金属音のような不協和音をならす
+        const delay = Math.random() * 4000 + 3000;
+        setTimeout(() => {
+          if (!this.isPlaying) return;
+          this.playCreakySound();
+          this.scheduleAmbientSounds();
+        }, delay);
+      }
+
+      playCreakySound() {
+        if (!this.ctx || !this.isPlaying) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200 + Math.random() * 300, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 1.5);
+
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.5);
+
+        osc.connect(gain);
+        gain.connect(this.gainNode);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 1.5);
+      }
+
+      stopBGM() {
+        if (!this.isPlaying) return;
+        this.isPlaying = false;
+        this.oscillators.forEach(osc => {
+          try { osc.stop(); } catch(e){}
+        });
+        this.oscillators = [];
+      }
+    }
+
+    const audio = new AudioSystem();
+
+    // --- Three.js 3Dワールド構築 ---
+    const container = document.getElementById('canvas-container');
+    const titleScreen = document.getElementById('title-screen');
+    const startBtn = document.getElementById('start-btn');
+    const crosshair = document.getElementById('crosshair');
+    const ui = document.getElementById('ui');
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x020204, 0.12);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    
+    const player = new THREE.Object3D();
+    player.position.set(0, 1.6, 5);
+    player.add(camera);
+    scene.add(player);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    container.appendChild(renderer.domElement);
+
+    // ライティング
+    const ambientLight = new THREE.AmbientLight(0x050508, 0.8);
+    scene.add(ambientLight);
+
+    const flashlight = new THREE.SpotLight(0xfff3d6, 3, 18, Math.PI / 5, 0.6, 1);
+    camera.add(flashlight);
+    flashlight.position.set(0, 0, 0);
+    flashlight.target.position.set(0, 0, -1);
+    camera.add(flashlight.target);
+
+    // 街並み
+    const floorGeo = new THREE.PlaneGeometry(20, 60);
+    const floorMat = new THREE.MeshBasicMaterial({ color: 0x111115 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    const wallMat = new THREE.MeshBasicMaterial({ color: 0x18181c });
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, 6, 60), wallMat);
+    leftWall.position.set(-5.5, 3, 0);
+    scene.add(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1, 6, 60), wallMat);
+    rightWall.position.set(5.5, 3, 0);
+    scene.add(rightWall);
+
+    // ネオン看板
+    let signLight;
+    function createSign() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#050202';
+      ctx.fillRect(0, 0, 512, 256);
+      ctx.font = 'Bold 84px serif';
+      ctx.fillStyle = '#d00000';
+      ctx.textAlign = 'center';
+      ctx.fillText('死 の 市', 256, 150);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const geo = new THREE.PlaneGeometry(4, 2);
+      const mat = new THREE.MeshBasicMaterial({ map: texture });
+      const signMesh = new THREE.Mesh(geo, mat);
+      signMesh.position.set(0, 3, -12);
+      scene.add(signMesh);
+
+      signLight = new THREE.PointLight(0xff0000, 1.5, 8);
+      signLight.position.set(0, 3, -11);
+      scene.add(signLight);
+    }
+    createSign();
+
+    // 謎の影
+    const shadowGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.8, 8);
+    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const shadowFigure = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowFigure.position.set(0, 0.9, -15);
+    scene.add(shadowFigure);
+
+    // --- ゲーム状態管理 ---
+    let isPlaying = false;
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let lon = 0, lat = 0;
+
+    startBtn.addEventListener('click', () => {
+      document.body.requestPointerLock();
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      if (document.pointerLockElement === document.body) {
+        // ゲーム再開・開始
+        isPlaying = true;
+        titleScreen.style.display = 'none';
+        crosshair.style.display = 'block';
+        ui.style.display = 'block';
+        audio.startBGM();
+      } else {
+        // ポーズ画面（タイトルに戻る）
+        isPlaying = false;
+        titleScreen.style.display = 'flex';
+        crosshair.style.display = 'none';
+        ui.style.display = 'none';
+        audio.stopBGM();
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isPlaying) return;
+
+      const movementX = e.movementX || 0;
+      const movementY = e.movementY || 0;
+
+      lon -= movementX * 0.15;
+      lat -= movementY * 0.15;
+      lat = Math.max(-85, Math.min(85, lat));
+
+      const phi = THREE.MathUtils.degToRad(90 - lat);
+      const theta = THREE.MathUtils.degToRad(lon);
+
+      const target = new THREE.Vector3();
+      target.x = Math.sin(phi) * Math.cos(theta);
+      target.y = Math.cos(phi);
+      target.z = Math.sin(phi) * Math.sin(theta);
+
+      camera.lookAt(target);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      switch (e.code) {
+        case 'KeyW': moveForward = true; break;
+        case 'KeyS': moveBackward = true; break;
+        case 'KeyA': moveLeft = true; break;
+        case 'KeyD': moveRight = true; break;
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      switch (e.code) {
+        case 'KeyW': moveForward = false; break;
+        case 'KeyS': moveBackward = false; break;
+        case 'KeyA': moveLeft = false; break;
+        case 'KeyD': moveRight = false; break;
+      }
+    });
+
+    // --- アニメーションループ ---
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      if (isPlaying) {
+        const moveSpeed = 2.5 * delta;
+        const forwardVector = new THREE.Vector3();
+        camera.getWorldDirection(forwardVector);
+        forwardVector.y = 0;
+        forwardVector.normalize();
+
+        const sideVector = new THREE.Vector3();
+        sideVector.crossVectors(camera.up, forwardVector).normalize();
+
+        if (moveForward) player.position.addScaledVector(forwardVector, moveSpeed);
+        if (moveBackward) player.position.addScaledVector(forwardVector, -moveSpeed);
+        if (moveLeft) player.position.addScaledVector(sideVector, moveSpeed);
+        if (moveRight) player.position.addScaledVector(sideVector, -moveSpeed);
+
+        player.position.x = Math.max(-4.5, Math.min(4.5, player.position.x));
+        player.position.z = Math.max(-25, Math.min(10, player.position.z));
+
+        if (moveForward || moveBackward || moveLeft || moveRight) {
+          flashlight.position.y = Math.sin(time * 8) * 0.02;
+          flashlight.position.x = Math.cos(time * 4) * 0.02;
+        }
+      }
+
+      if (signLight) {
+        signLight.intensity = Math.random() > 0.08 ? 1.5 : 0.2;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
