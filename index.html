@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Terrifying Monster Edition</title>
+  <title>死の市 - Nightmare Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -29,12 +29,12 @@
       pointer-events: none;
       background: repeating-linear-gradient(
         0deg,
-        rgba(0, 0, 0, 0.25),
-        rgba(0, 0, 0, 0.25) 1px,
+        rgba(0, 0, 0, 0.3),
+        rgba(0, 0, 0, 0.3) 1px,
         transparent 1px,
         transparent 2px
       );
-      box-shadow: inset 0 0 150px rgba(0,0,0,0.95);
+      box-shadow: inset 0 0 160px rgba(0,0,0,0.95);
       z-index: 10;
     }
 
@@ -43,11 +43,11 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(255, 0, 0, 0.7);
+      background-color: rgba(255, 0, 0, 0.85);
       pointer-events: none;
       z-index: 15;
       opacity: 0;
-      transition: opacity 0.1s ease;
+      transition: opacity 0.08s ease;
     }
 
     #crosshair {
@@ -75,7 +75,7 @@
     }
 
     .hud-box {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       padding: 10px 14px;
       border: 1px solid #444;
       border-left: 4px solid #b30000;
@@ -103,15 +103,15 @@
       bottom: 40px;
       width: 100%;
       text-align: center;
-      color: #ff3333;
-      font-size: 18px;
+      color: #ff2222;
+      font-size: 20px;
       font-weight: bold;
       letter-spacing: 3px;
       z-index: 20;
       pointer-events: none;
-      text-shadow: 0 0 10px #000;
+      text-shadow: 0 0 10px #000, 0 0 20px #f00;
       opacity: 0;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.4s ease;
     }
 
     /* 共通ボタンデザイン */
@@ -140,7 +140,7 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: radial-gradient(circle, rgba(20, 2, 2, 0.96) 0%, rgba(0,0,0,0.99) 100%);
+      background: radial-gradient(circle, rgba(25, 2, 2, 0.96) 0%, rgba(0,0,0,0.99) 100%);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -155,12 +155,12 @@
       letter-spacing: 16px;
       margin-bottom: 5px;
       text-shadow: 0 0 25px rgba(255, 0, 0, 0.8), 4px 4px 0px #000;
-      animation: pulse 3s infinite alternate;
+      animation: pulse 2.5s infinite alternate;
     }
 
     @keyframes pulse {
       0% { opacity: 0.75; text-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
-      100% { opacity: 1; text-shadow: 0 0 35px rgba(255, 0, 0, 1), 0 0 8px rgba(255,255,255,0.7); }
+      100% { opacity: 1; text-shadow: 0 0 40px rgba(255, 0, 0, 1), 0 0 10px rgba(255,255,255,0.8); }
     }
 
     .subtitle {
@@ -184,26 +184,26 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(40, 0, 0, 0.96);
+      background-color: rgba(30, 0, 0, 0.98);
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 50;
-      animation: goFlash 0.15s infinite alternate;
+      animation: goFlash 0.1s infinite alternate;
     }
 
     @keyframes goFlash {
-      0% { background-color: rgba(60, 0, 0, 0.96); }
-      100% { background-color: rgba(10, 0, 0, 0.98); }
+      0% { background-color: rgba(70, 0, 0, 0.98); }
+      100% { background-color: rgba(5, 0, 0, 0.99); }
     }
 
     .go-title {
-      font-size: 80px;
+      font-size: 84px;
       color: #ff0000;
       font-weight: bold;
       letter-spacing: 16px;
-      text-shadow: 0 0 20px #000, 0 0 40px #f00;
+      text-shadow: 0 0 20px #000, 0 0 50px #f00;
       margin-bottom: 15px;
     }
 
@@ -261,7 +261,7 @@
   <div id="ui">
     <div class="hud-box">
       <div>『死の市』からの生還</div>
-      <div style="margin-top:4px;">鍵: <span id="key-count" style="color:#ff3333; font-weight:bold;">0 / 3</span></div>
+      <div style="margin-top:4px;">鍵: <span id="key-count" style="color:#ff3333; font-weight:bold;">0 / 5</span></div>
     </div>
     <div class="hud-box">
       <div>STAMINA</div>
@@ -274,19 +274,19 @@
   <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- FEAR OF THE UNKNOWN -</div>
+    <div class="subtitle">- NIGHTMARE EDITION -</div>
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点変更<br>
-      【目標】街を徘徊する不気味な異形を避け、<span style="color:#ff3333">3つの鍵</span> を見つけて脱出せよ。<br>
-      ※異形が近づくと恐怖の音が大きくなります。
+      【目標】街に隠された <span style="color:#ff3333">5つの鍵</span> を見つけて脱出せよ。<br>
+      ※4つ目の鍵を回収すると、<span style="color:#ff0000; font-weight:bold;">超強力な異形</span> が目覚めます。
     </div>
   </div>
 
   <!-- ゲームオーバー画面 -->
   <div id="gameover-overlay">
-    <div class="go-title">G A M E   O V E R</div>
-    <div class="go-sub">死の市に囚われ、あなたの意識は闇へと消えた...</div>
+    <div class="go-title">S L A U G H T E R</div>
+    <div class="go-sub">肉体を切り刻まれ、あなたの魂は闇に呑まれた...</div>
     <button class="btn-action" id="retry-btn">タイトルへ戻る</button>
     <div class="go-hint">[ Space ] または画面クリックでも戻れます</div>
   </div>
@@ -294,14 +294,14 @@
   <!-- クリア画面 -->
   <div id="clear-overlay">
     <div class="clear-title">E S C A P E D</div>
-    <div class="clear-sub">あなたは無事に死の市から脱出した！</div>
+    <div class="clear-sub">生きてこの地獄を抜け出すことに成功した！</div>
     <button class="btn-action" id="clear-title-btn">タイトルへ戻る</button>
   </div>
 
   <div id="canvas-container"></div>
 
   <script>
-    // --- Dynamic Sound System ---
+    // --- Dark & Terrifying Audio System ---
     class AudioSystem {
       constructor() {
         this.ctx = null;
@@ -312,6 +312,8 @@
         
         this.chaseGain = null;
         this.chaseOscs = [];
+
+        this.bgmTimer = null;
       }
 
       init() {
@@ -328,22 +330,22 @@
 
         const now = this.ctx.currentTime;
 
-        // Base Ambient Sound
+        // Base Ambient Music (暗黒重低音)
         this.baseGain = this.ctx.createGain();
-        this.baseGain.gain.setValueAtTime(0.25, now);
+        this.baseGain.gain.setValueAtTime(0.3, now);
         this.baseGain.connect(this.ctx.destination);
 
         const baseOsc1 = this.ctx.createOscillator();
         baseOsc1.type = 'sawtooth';
-        baseOsc1.frequency.setValueAtTime(32, now);
+        baseOsc1.frequency.setValueAtTime(30, now);
 
         const baseOsc2 = this.ctx.createOscillator();
         baseOsc2.type = 'sine';
-        baseOsc2.frequency.setValueAtTime(36, now);
+        baseOsc2.frequency.setValueAtTime(34.65, now); // 不協和音 (C#)
 
         const baseFilter = this.ctx.createBiquadFilter();
         baseFilter.type = 'lowpass';
-        baseFilter.frequency.setValueAtTime(110, now);
+        baseFilter.frequency.setValueAtTime(100, now);
 
         baseOsc1.connect(baseFilter);
         baseOsc2.connect(baseFilter);
@@ -352,6 +354,7 @@
         baseOsc1.start();
         baseOsc2.start();
 
+        // 風音・環境ノイズ
         const bufferSize = this.ctx.sampleRate * 2;
         const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
@@ -365,11 +368,11 @@
 
         const noiseFilter = this.ctx.createBiquadFilter();
         noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.setValueAtTime(180, now);
-        noiseFilter.Q.setValueAtTime(2.5, now);
+        noiseFilter.frequency.setValueAtTime(160, now);
+        noiseFilter.Q.setValueAtTime(3.0, now);
 
         const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.06, now);
+        noiseGain.gain.setValueAtTime(0.08, now);
 
         bgNoise.connect(noiseFilter);
         noiseFilter.connect(noiseGain);
@@ -378,30 +381,30 @@
         bgNoise.start();
         this.baseOscs = [baseOsc1, baseOsc2, bgNoise];
 
-        // Terrifying Proximity Sound
+        // 追跡時の恐怖の警告音
         this.chaseGain = this.ctx.createGain();
         this.chaseGain.gain.setValueAtTime(0.0, now);
         this.chaseGain.connect(this.ctx.destination);
 
         const chaseOsc1 = this.ctx.createOscillator();
         chaseOsc1.type = 'sawtooth';
-        chaseOsc1.frequency.setValueAtTime(620, now);
+        chaseOsc1.frequency.setValueAtTime(700, now);
 
         const chaseOsc2 = this.ctx.createOscillator();
         chaseOsc2.type = 'square';
-        chaseOsc2.frequency.setValueAtTime(632, now);
+        chaseOsc2.frequency.setValueAtTime(715, now);
 
         const lfo = this.ctx.createOscillator();
-        lfo.type = 'sine';
-        lfo.frequency.setValueAtTime(8, now);
+        lfo.type = 'sawtooth';
+        lfo.frequency.setValueAtTime(12, now);
         const lfoGain = this.ctx.createGain();
-        lfoGain.gain.setValueAtTime(200, now);
+        lfoGain.gain.setValueAtTime(300, now);
         lfo.connect(chaseOsc1.frequency);
         lfo.start();
 
         const chaseFilter = this.ctx.createBiquadFilter();
         chaseFilter.type = 'highpass';
-        chaseFilter.frequency.setValueAtTime(400, now);
+        chaseFilter.frequency.setValueAtTime(500, now);
 
         chaseOsc1.connect(chaseFilter);
         chaseOsc2.connect(chaseFilter);
@@ -411,20 +414,55 @@
         chaseOsc2.start();
 
         this.chaseOscs = [chaseOsc1, chaseOsc2, lfo];
+
+        // ランダムな恐怖の不協和音ストリングス効果
+        this.scheduleRandomStabs();
+      }
+
+      scheduleRandomStabs() {
+        if (!this.isPlaying) return;
+        const delay = Math.random() * 8000 + 4000;
+        this.bgmTimer = setTimeout(() => {
+          if (this.isPlaying) {
+            this.playCreepyStab();
+            this.scheduleRandomStabs();
+          }
+        }, delay);
+      }
+
+      playCreepyStab() {
+        if (!this.ctx || !this.isPlaying) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        const freqs = [130.81, 138.59, 185.00, 196.00];
+        osc.frequency.setValueAtTime(freqs[Math.floor(Math.random() * freqs.length)], now);
+        osc.frequency.linearRampToValueAtTime(80, now + 1.2);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 1.2);
       }
 
       updateChaseBGMVolume(distance) {
         if (!this.ctx || !this.isPlaying || !this.chaseGain) return;
 
-        const maxDistance = 25.0;
+        const maxDistance = 28.0;
         let volume = 0;
 
         if (distance < maxDistance) {
           const factor = 1 - (distance / maxDistance);
-          volume = Math.pow(factor, 1.5) * 0.45;
+          volume = Math.pow(factor, 1.3) * 0.55;
         }
 
-        this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.1);
+        this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.08);
       }
 
       playHeartbeat() {
@@ -433,17 +471,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(75, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(15, this.ctx.currentTime + 0.16);
+        osc.frequency.setValueAtTime(85, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.15);
 
-        gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.16);
+        gain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.16);
+        osc.stop(this.ctx.currentTime + 0.15);
       }
 
       playKeyPickup() {
@@ -453,40 +491,70 @@
 
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(587.33, this.ctx.currentTime);
-        osc.frequency.setValueAtTime(880, this.ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(880, this.ctx.currentTime + 0.12);
 
         gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.4);
+        osc.stop(this.ctx.currentTime + 0.5);
       }
 
+      // 超凶悪なゲームオーバー死亡音（ノイズ＋叫び風降下音）
       playGameoverSound() {
         if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // 凶悪なデススコーラ（ノイズ爆発）
+        const bufferSize = this.ctx.sampleRate * 1.5;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.4));
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(3000, now);
+        noiseFilter.frequency.linearRampToValueAtTime(200, now + 1.5);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(1.0, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+
+        // 高音からの急降下叫び音
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(500, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(15, this.ctx.currentTime + 2.5);
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 2.0);
 
-        gain.gain.setValueAtTime(1.0, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2.5);
+        gain.gain.setValueAtTime(0.9, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
-        osc.start();
-        osc.stop(this.ctx.currentTime + 2.5);
+        osc.start(now);
+        osc.stop(now + 2.0);
       }
 
       stopBGM() {
         if (!this.isPlaying) return;
         this.isPlaying = false;
+        if (this.bgmTimer) clearTimeout(this.bgmTimer);
         
         [...this.baseOscs, ...this.chaseOscs].forEach(osc => {
           try { osc.stop(); } catch(e){}
@@ -516,8 +584,8 @@
 
     // 3D Scene Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020205);
-    scene.fog = new THREE.FogExp2(0x020205, 0.04);
+    scene.background = new THREE.Color(0x010103);
+    scene.fog = new THREE.FogExp2(0x010103, 0.045);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
     camera.rotation.order = 'YXZ';
@@ -532,14 +600,14 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0x222a3d, 0.8);
+    const ambientLight = new THREE.AmbientLight(0x1a2030, 0.6);
     scene.add(ambientLight);
 
-    const moonLight = new THREE.DirectionalLight(0x4466aa, 0.4);
+    const moonLight = new THREE.DirectionalLight(0x334477, 0.3);
     moonLight.position.set(20, 50, 20);
     scene.add(moonLight);
 
-    const flashlight = new THREE.SpotLight(0xfff3d6, 4.0, 26, Math.PI / 4, 0.4, 1);
+    const flashlight = new THREE.SpotLight(0xfff0d0, 4.5, 25, Math.PI / 4.2, 0.4, 1);
     camera.add(flashlight);
     flashlight.position.set(0, 0, 0);
     flashlight.target.position.set(0, 0, -1);
@@ -547,7 +615,7 @@
 
     // Floor
     const floorGeo = new THREE.PlaneGeometry(180, 160);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.9 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0d0d12, roughness: 0.95 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
@@ -558,7 +626,7 @@
       canvas.width = 128; canvas.height = 256;
       const ctx = canvas.getContext('2d');
 
-      ctx.fillStyle = '#121216';
+      ctx.fillStyle = '#0f0f13';
       ctx.fillRect(0, 0, 128, 256);
 
       const cols = 3; const rows = 8;
@@ -571,10 +639,10 @@
           const x = padX + c * (w + padX);
           const y = padY + r * (h + padY);
 
-          if (Math.random() < 0.2) {
-            ctx.fillStyle = Math.random() < 0.5 ? '#ffe082' : '#80d8ff';
+          if (Math.random() < 0.15) {
+            ctx.fillStyle = Math.random() < 0.5 ? '#e6c065' : '#5098bd';
           } else {
-            ctx.fillStyle = '#08080c';
+            ctx.fillStyle = '#050508';
           }
           ctx.fillRect(x, y, w, h);
         }
@@ -586,8 +654,8 @@
     const buildingColliders = [];
 
     function buildWideCity() {
-      const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.8 });
-      const poleMat = new THREE.MeshStandardMaterial({ color: 0x222228 });
+      const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.85 });
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x1a1a20 });
 
       for (let z = -70; z <= 50; z += 18) {
         for (let x = -45; x <= 45; x += 30) {
@@ -616,7 +684,7 @@
           pole.position.set(xPos, 3.5, z);
           scene.add(pole);
 
-          const light = new THREE.PointLight(0xffb84d, 1.2, 12);
+          const light = new THREE.PointLight(0xffa500, 1.1, 11);
           light.position.set(xPos, 6.5, z);
           scene.add(light);
         });
@@ -630,10 +698,10 @@
       const canvas = document.createElement('canvas');
       canvas.width = 512; canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#050202';
+      ctx.fillStyle = '#040101';
       ctx.fillRect(0, 0, 512, 256);
       ctx.font = 'Bold 90px serif';
-      ctx.fillStyle = '#e60000';
+      ctx.fillStyle = '#cc0000';
       ctx.textAlign = 'center';
       ctx.fillText('死 の 市', 256, 150);
 
@@ -647,7 +715,7 @@
       scene.add(signLight);
 
       const doorGeo = new THREE.BoxGeometry(3.5, 5, 0.2);
-      const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+      const doorMat = new THREE.MeshStandardMaterial({ color: 0x080808 });
       exitDoor = new THREE.Mesh(doorGeo, doorMat);
       exitDoor.position.set(0, 2.5, -62);
       scene.add(exitDoor);
@@ -663,9 +731,9 @@
       const keyGroup = new THREE.Group();
       const goldMat = new THREE.MeshStandardMaterial({
         color: 0xffcc00,
-        metalness: 0.8,
-        roughness: 0.3,
-        emissive: 0x443300
+        metalness: 0.85,
+        roughness: 0.2,
+        emissive: 0x554400
       });
 
       const headGeo = new THREE.TorusGeometry(0.18, 0.04, 8, 16);
@@ -687,10 +755,13 @@
     }
 
     const keys = [];
+    // 鍵を5個に増設
     const keyPositions = [
-      new THREE.Vector3(-32, 0.8, 10),
+      new THREE.Vector3(-32, 0.8, 15),
       new THREE.Vector3(32, 0.8, -10),
-      new THREE.Vector3(-15, 0.8, -42)
+      new THREE.Vector3(-15, 0.8, -42),
+      new THREE.Vector3(35, 0.8, 28),
+      new THREE.Vector3(-35, 0.8, -25)
     ];
 
     function spawnKeys() {
@@ -713,74 +784,81 @@
       });
     }
 
-    // --- 新・リアルな不気味モンスターデザインの生成 ---
-    function createScaryMonster(eyeColorHex = 0xff0000) {
+    // --- より怖さを増したモンスターデザイン ---
+    function createScaryMonster(eyeColorHex = 0xff0000, isBoss = false) {
       const group = new THREE.Group();
       
-      // 不気味な漆黒の質感（粗さ高め＋わずかな発光）
       const monsterMat = new THREE.MeshStandardMaterial({ 
-        color: 0x030305, 
-        roughness: 0.95,
-        metalness: 0.2
+        color: isBoss ? 0x000000 : 0x020204, 
+        roughness: 0.98,
+        metalness: 0.1
       });
 
-      // 1. 細長く歪んだ胴体（高さをアップ）
-      const bodyGeo = new THREE.CylinderGeometry(0.18, 0.08, 3.4, 8);
+      const scale = isBoss ? 1.5 : 1.0;
+
+      // 1. 歪んで鋭利な胴体
+      const bodyGeo = new THREE.ConeGeometry(0.25 * scale, 3.8 * scale, 5);
       const body = new THREE.Mesh(bodyGeo, monsterMat);
-      body.position.y = 1.7;
+      body.rotation.x = Math.PI; // 逆三角の不気味なシルエット
+      body.position.y = 1.9 * scale;
       group.add(body);
 
-      // 2. 異形な頭部（不揃いな楕円球）
-      const headGeo = new THREE.SphereGeometry(0.32, 8, 8);
-      headGeo.scale(1.0, 1.3, 0.9); // 上下に引き伸ばして不揃いに
+      // 2. 異形な頭部（不規則な多角形）
+      const headGeo = new THREE.DodecahedronGeometry(0.35 * scale);
       const head = new THREE.Mesh(headGeo, monsterMat);
-      head.position.y = 3.3;
+      head.position.y = 3.6 * scale;
       group.add(head);
 
-      // 3. 頭部の異形ツノ/棘（不気味なシルエット強調）
-      const hornGeo = new THREE.ConeGeometry(0.05, 0.6, 5);
-      const horn1 = new THREE.Mesh(hornGeo, monsterMat);
-      horn1.position.set(-0.15, 3.7, -0.05);
-      horn1.rotation.z = -0.3;
-      const horn2 = new THREE.Mesh(hornGeo, monsterMat);
-      horn2.position.set(0.12, 3.8, 0.02);
-      horn2.rotation.z = 0.25;
-      group.add(horn1);
-      group.add(horn2);
+      // 3. 頭部の複数の巨大角/針
+      const hornGeo = new THREE.ConeGeometry(0.04 * scale, 0.9 * scale, 4);
+      for (let i = 0; i < (isBoss ? 6 : 3); i++) {
+        const horn = new THREE.Mesh(hornGeo, monsterMat);
+        horn.position.set(
+          (Math.random() - 0.5) * 0.3 * scale,
+          (3.9 + Math.random() * 0.3) * scale,
+          (Math.random() - 0.5) * 0.3 * scale
+        );
+        horn.rotation.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+        group.add(horn);
+      }
 
-      // 4. 赤く光るマルチアイ（複眼：4つの赤目）
+      // 4. 赤く光るマルチアイ（複眼）
       const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColorHex });
-      const eyeGeo = new THREE.SphereGeometry(0.045, 6, 6);
+      const eyeGeo = new THREE.SphereGeometry(0.05 * scale, 6, 6);
 
-      const eyePositions = [
-        new THREE.Vector3(-0.12, 3.35, -0.28),
-        new THREE.Vector3(0.12, 3.35, -0.28),
-        new THREE.Vector3(-0.05, 3.20, -0.29),
-        new THREE.Vector3(0.06, 3.48, -0.27)
-      ];
-
-      eyePositions.forEach(pos => {
+      const eyeCount = isBoss ? 6 : 4;
+      for (let i = 0; i < eyeCount; i++) {
         const eye = new THREE.Mesh(eyeGeo, eyeMat);
-        eye.position.copy(pos);
+        eye.position.set(
+          (Math.random() - 0.5) * 0.35 * scale,
+          (3.5 + (Math.random() - 0.5) * 0.3) * scale,
+          -0.3 * scale
+        );
         group.add(eye);
-      });
+      }
 
-      // 5. 目元の赤く不穏な光
-      const eyeLight = new THREE.PointLight(eyeColorHex, 0.8, 4);
-      eyeLight.position.set(0, 3.3, -0.3);
+      // 5. 不穏な眼光
+      const eyeLight = new THREE.PointLight(eyeColorHex, isBoss ? 2.5 : 1.0, isBoss ? 8 : 4);
+      eyeLight.position.set(0, 3.6 * scale, -0.35 * scale);
       group.add(eyeLight);
 
-      return { group, head, body };
+      return { group, head, body, isBoss };
     }
 
     const monster1 = createScaryMonster(0xff0000); // 追跡者（赤目）
     monster1.group.position.set(0, 0, -65);
     scene.add(monster1.group);
 
-    const monster2 = createScaryMonster(0xff0055); // 巡回者（不気味なピンク赤目）
+    const monster2 = createScaryMonster(0xff0055); // 巡回者
     monster2.group.position.set(-30, 0, -15);
     scene.add(monster2.group);
 
+    // 4個目の鍵で覚醒する超強いボスメンスター（第3の異形）
+    const bossMonster = createScaryMonster(0xff0000, true);
+    bossMonster.group.position.set(0, -100, 0); // 初期は画面外に隠す
+    scene.add(bossMonster.group);
+
+    let isBossSpawned = false;
     let patrolTargetX = 30;
     const patrolSpeed = 2.8;
 
@@ -812,7 +890,7 @@
     function showMessage(msg) {
       msgLog.textContent = msg;
       msgLog.style.opacity = '1';
-      setTimeout(() => { msgLog.style.opacity = '0'; }, 2500);
+      setTimeout(() => { msgLog.style.opacity = '0'; }, 3000);
     }
 
     function returnToTitle() {
@@ -831,6 +909,10 @@
       
       monster1.group.position.set(0, 0, -65);
       monster2.group.position.set(-30, 0, -15);
+      
+      bossMonster.group.position.set(0, -100, 0);
+      isBossSpawned = false;
+
       patrolTargetX = 30;
 
       isChasing = false;
@@ -990,19 +1072,21 @@
         }
       });
 
-      // Monster Eerie Wobble Animation (うごめくアニメーション)
-      [monster1, monster2].forEach((m, idx) => {
-        const speed = idx === 0 ? 12 : 8;
-        m.head.position.x = Math.sin(time * speed) * 0.08;
-        m.head.position.z = Math.cos(time * speed * 0.8) * 0.06;
-        m.body.rotation.z = Math.sin(time * 4) * 0.05;
+      // Monster Glitch/Wobble Animation (不規則なカクつきアニメーション)
+      [monster1, monster2, bossMonster].forEach((m, idx) => {
+        const speed = idx === 2 ? 22 : (idx === 0 ? 14 : 9);
+        // 不規則なグリッチ振動
+        const glitch = (Math.random() - 0.5) * 0.05;
+        m.head.position.x = Math.sin(time * speed) * 0.1 + glitch;
+        m.head.position.z = Math.cos(time * speed * 0.8) * 0.08;
+        m.body.rotation.z = Math.sin(time * 6) * 0.08;
       });
 
-      // Game Over Jump Camera Animation
+      // Game Over Camera Jumpscare Animation
       if (isJumpingOver) {
-        jumpTime += delta * 6;
-        player.position.y = 1.6 + Math.sin(jumpTime) * 1.5;
-        camera.rotation.x = -Math.PI / 3.5 + Math.sin(jumpTime * 2) * 0.2;
+        jumpTime += delta * 8;
+        player.position.y = 1.6 + Math.sin(jumpTime) * 1.8;
+        camera.rotation.x = -Math.PI / 3 + Math.sin(jumpTime * 2.5) * 0.3;
 
         if (jumpTime > Math.PI) {
           isJumpingOver = false;
@@ -1017,14 +1101,14 @@
 
         if (isSprinting && isMoving && !isExhausted) {
           speedMultiplier = 1.75;
-          stamina -= 50 * delta;
+          stamina -= 48 * delta;
           if (stamina <= 0) {
             stamina = 0;
             isExhausted = true;
             staminaBar.style.backgroundColor = '#ff3333';
           }
         } else {
-          stamina += 15 * delta;
+          stamina += 16 * delta;
           if (stamina >= maxStamina) {
             stamina = maxStamina;
             isExhausted = false;
@@ -1070,7 +1154,13 @@
             keyCountEl.textContent = `${keysCollectedCount} / ${keyPositions.length}`;
             audio.playKeyPickup();
 
-            if (keysCollectedCount < keyPositions.length) {
+            // 4つ目の鍵を入手した時にボスメンスター出現！
+            if (keysCollectedCount === 4) {
+              isBossSpawned = true;
+              bossMonster.group.position.set(0, 0, -60); // 扉の前から出現
+              triggerRedFlash();
+              showMessage('⚠️ 警 告 ⚠️ 超巨大な凶悪異形が解き放たれた！！');
+            } else if (keysCollectedCount < keyPositions.length) {
               showMessage(`鍵を手に入れた (${keysCollectedCount}/${keyPositions.length})`);
             } else {
               showMessage('すべての鍵が集まった！中央最深部の扉から脱出せよ！');
@@ -1083,16 +1173,17 @@
           if (keysCollectedCount >= keyPositions.length) {
             triggerGameClear();
           } else {
-            showMessage('扉は鍵がかかっている... (鍵が3つ必要)');
+            showMessage(`扉は鍵がかかっている... (鍵が${keyPositions.length}個必要)`);
           }
         }
 
-        // --- Monster 1 (Chaser) ---
         const pPos = new THREE.Vector3(player.position.x, 0, player.position.z);
+
+        // --- Monster 1 (Chaser) ---
         const m1Pos = new THREE.Vector3(monster1.group.position.x, 0, monster1.group.position.z);
         const dist1 = pPos.distanceTo(m1Pos);
 
-        if (player.position.z < 10 && !isChasing) {
+        if (player.position.z < 12 && !isChasing) {
           isChasing = true;
           showMessage('何かが目覚めた...！逃げろ！');
         }
@@ -1101,20 +1192,17 @@
           monster1.group.lookAt(player.position.x, 0, player.position.z);
 
           heartbeatTimer += delta;
-          const heartbeatInterval = Math.max(0.18, dist1 * 0.045);
+          const heartbeatInterval = Math.max(0.15, dist1 * 0.04);
           if (heartbeatTimer > heartbeatInterval) {
             audio.playHeartbeat();
             heartbeatTimer = 0;
           }
 
-          const chaseSpeed = 3.8 * delta;
+          const chaseSpeed = 3.9 * delta;
           const chaseDir = new THREE.Vector3().subVectors(pPos, m1Pos).normalize();
-
           moveMonsterWithCollision(monster1.group, chaseDir.multiplyScalar(chaseSpeed), 0.4);
 
-          if (dist1 < 2.0) {
-            triggerGameOver(monster1.group);
-          }
+          if (dist1 < 2.0) triggerGameOver(monster1.group);
         }
 
         // --- Monster 2 (Patroller) ---
@@ -1133,13 +1221,26 @@
         }
 
         moveMonsterWithCollision(monster2.group, new THREE.Vector3(patrolDirX, 0, 0), 0.4);
+        if (dist2 < 2.0) triggerGameOver(monster2.group);
 
-        if (dist2 < 2.0) {
-          triggerGameOver(monster2.group);
+        // --- Boss Monster (超強い・高速追跡) ---
+        let distBoss = 999;
+        if (isBossSpawned) {
+          const mBossPos = new THREE.Vector3(bossMonster.group.position.x, 0, bossMonster.group.position.z);
+          distBoss = pPos.distanceTo(mBossPos);
+
+          bossMonster.group.lookAt(player.position.x, 0, player.position.z);
+
+          // 超高速追跡 (プレイヤーのダッシュと同等の速度)
+          const bossSpeed = 4.8 * delta;
+          const bossDir = new THREE.Vector3().subVectors(pPos, mBossPos).normalize();
+          moveMonsterWithCollision(bossMonster.group, bossDir.multiplyScalar(bossSpeed), 0.6);
+
+          if (distBoss < 2.5) triggerGameOver(bossMonster.group);
         }
 
         // Dynamic Sound Update
-        const nearestMonsterDist = Math.min(dist1, dist2);
+        const nearestMonsterDist = Math.min(dist1, dist2, distBoss);
         audio.updateChaseBGMVolume(nearestMonsterDist);
       }
 
