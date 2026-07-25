@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Custom Opening & Horror Stream Edition</title>
+  <title>死の市 - Wolf Beast & Dark Horror Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -21,7 +21,6 @@
       display: block;
     }
 
-    /* レトロVHS・走査線効果 */
     #vhs-overlay {
       position: absolute;
       top: 0; left: 0;
@@ -29,12 +28,12 @@
       pointer-events: none;
       background: repeating-linear-gradient(
         0deg,
-        rgba(0, 0, 0, 0.25),
-        rgba(0, 0, 0, 0.25) 1px,
+        rgba(0, 0, 0, 0.3),
+        rgba(0, 0, 0, 0.3) 1px,
         transparent 1px,
         transparent 2px
       );
-      box-shadow: inset 0 0 160px rgba(0,0,0,0.95);
+      box-shadow: inset 0 0 180px rgba(0,0,0,0.98);
       z-index: 10;
     }
 
@@ -42,7 +41,7 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(255, 0, 0, 0.85);
+      background-color: rgba(180, 0, 0, 0.9);
       pointer-events: none;
       z-index: 15;
       opacity: 0;
@@ -73,41 +72,40 @@
     }
 
     .hud-box {
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       padding: 10px 14px;
-      border: 1px solid #444;
-      border-left: 4px solid #b30000;
+      border: 1px solid #333;
+      border-left: 4px solid #8b0000;
       margin-bottom: 8px;
     }
 
     #stamina-bar-bg {
       width: 150px;
       height: 8px;
-      background: #222;
-      border: 1px solid #555;
+      background: #111;
+      border: 1px solid #444;
       margin-top: 6px;
     }
 
     #stamina-bar {
       width: 100%;
       height: 100%;
-      background: #00b359;
+      background: #008844;
       transition: width 0.1s linear, background-color 0.2s;
     }
 
-    /* ミニマップ */
     #minimap-container {
       position: absolute;
       bottom: 20px;
       right: 20px;
       width: 150px;
       height: 150px;
-      background: rgba(10, 10, 15, 0.85);
-      border: 2px solid #555;
+      background: rgba(5, 5, 8, 0.9);
+      border: 2px solid #444;
       border-radius: 50%;
       z-index: 25;
       display: none;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.9), inset 0 0 10px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.95), inset 0 0 12px rgba(0, 0, 0, 0.9);
       overflow: hidden;
     }
 
@@ -116,12 +114,11 @@
       height: 100%;
     }
 
-    /* アイテムゲットチャンス画面 */
     #chance-screen {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(5, 2, 10, 0.92);
+      background: rgba(3, 1, 5, 0.95);
       display: none;
       flex-direction: column;
       justify-content: center;
@@ -132,21 +129,15 @@
 
     .chance-title {
       font-size: 42px;
-      color: #ffcc00;
+      color: #ffaa00;
       letter-spacing: 8px;
       margin-bottom: 10px;
-      text-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
-      animation: chanceGlow 1.5s infinite alternate;
-    }
-
-    @keyframes chanceGlow {
-      0% { text-shadow: 0 0 10px #ffcc00; }
-      100% { text-shadow: 0 0 35px #ffff00, 0 0 10px #fff; }
+      text-shadow: 0 0 20px rgba(255, 170, 0, 0.8);
     }
 
     .chance-sub {
       font-size: 14px;
-      color: #bbb;
+      color: #999;
       margin-bottom: 40px;
       letter-spacing: 3px;
     }
@@ -159,8 +150,8 @@
     .chest-card {
       width: 160px;
       height: 220px;
-      background: radial-gradient(circle, #2a2015 0%, #110b05 100%);
-      border: 2px solid #aa8833;
+      background: radial-gradient(circle, #201510 0%, #080402 100%);
+      border: 2px solid #886622;
       border-radius: 8px;
       display: flex;
       flex-direction: column;
@@ -173,21 +164,12 @@
 
     .chest-card:hover {
       transform: translateY(-10px) scale(1.05);
-      border-color: #ffdd66;
-      box-shadow: 0 0 25px rgba(255, 204, 0, 0.6);
+      border-color: #ffbb33;
+      box-shadow: 0 0 25px rgba(255, 170, 0, 0.6);
     }
 
-    .chest-icon {
-      font-size: 54px;
-      margin-bottom: 15px;
-    }
-
-    .chest-label {
-      font-size: 16px;
-      color: #ffdd66;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
+    .chest-icon { font-size: 54px; margin-bottom: 15px; }
+    .chest-label { font-size: 16px; color: #ffbb33; font-weight: bold; letter-spacing: 2px; }
 
     #chance-result {
       margin-top: 35px;
@@ -198,12 +180,11 @@
       text-shadow: 0 0 10px #00ff88;
     }
 
-    /* ポーズ画面 */
     #pause-menu {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.9);
       display: none;
       flex-direction: column;
       justify-content: center;
@@ -214,15 +195,15 @@
 
     .menu-title {
       font-size: 42px;
-      color: #cc0000;
+      color: #990000;
       letter-spacing: 8px;
       margin-bottom: 25px;
-      text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+      text-shadow: 0 0 15px rgba(153, 0, 0, 0.6);
     }
 
     .setting-group {
-      background: rgba(20, 20, 20, 0.9);
-      border: 1px solid #444;
+      background: rgba(15, 15, 15, 0.95);
+      border: 1px solid #333;
       padding: 20px 30px;
       border-radius: 4px;
       width: 320px;
@@ -239,31 +220,28 @@
       font-size: 14px;
     }
 
-    .setting-item input[type=range] {
-      width: 130px;
-      cursor: pointer;
-    }
+    .setting-item input[type=range] { width: 130px; cursor: pointer; }
 
     #message-log {
       position: absolute;
       bottom: 40px;
       width: 100%;
       text-align: center;
-      color: #ff2222;
+      color: #ff3333;
       font-size: 20px;
       font-weight: bold;
       letter-spacing: 3px;
       z-index: 20;
       pointer-events: none;
-      text-shadow: 0 0 10px #000, 0 0 20px #f00;
+      text-shadow: 0 0 10px #000, 0 0 20px #800;
       opacity: 0;
       transition: opacity 0.4s ease;
     }
 
     .btn-action {
       background: transparent;
-      border: 1px solid #666;
-      color: #ddd;
+      border: 1px solid #555;
+      color: #ccc;
       padding: 12px 36px;
       font-size: 16px;
       font-family: inherit;
@@ -273,7 +251,7 @@
     }
 
     .btn-action:hover {
-      background: #800000;
+      background: #660000;
       color: #fff;
       border-color: #f00;
       box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
@@ -283,7 +261,7 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: radial-gradient(circle, rgba(25, 2, 2, 0.96) 0%, rgba(0,0,0,0.99) 100%);
+      background: radial-gradient(circle, rgba(15, 2, 2, 0.98) 0%, rgba(0,0,0,0.99) 100%);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -294,74 +272,35 @@
 
     .game-title {
       font-size: 76px;
-      color: #b30000;
+      color: #990000;
       letter-spacing: 16px;
       margin-bottom: 5px;
-      text-shadow: 0 0 25px rgba(255, 0, 0, 0.8), 4px 4px 0px #000;
-      animation: pulse 2.5s infinite alternate;
+      text-shadow: 0 0 25px rgba(153, 0, 0, 0.8), 4px 4px 0px #000;
     }
 
-    @keyframes pulse {
-      0% { opacity: 0.75; text-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
-      100% { opacity: 1; text-shadow: 0 0 40px rgba(255, 0, 0, 1), 0 0 10px rgba(255,255,255,0.8); }
-    }
-
-    .subtitle {
-      font-size: 13px;
-      color: #777;
-      letter-spacing: 6px;
-      margin-bottom: 10px;
-    }
-
-    .controls-hint {
-      margin-top: 25px;
-      font-size: 11px;
-      color: #888;
-      letter-spacing: 1px;
-      line-height: 1.8;
-      text-align: center;
-    }
+    .subtitle { font-size: 13px; color: #666; letter-spacing: 6px; margin-bottom: 10px; }
+    .controls-hint { margin-top: 25px; font-size: 11px; color: #777; letter-spacing: 1px; line-height: 1.8; text-align: center; }
 
     #gameover-overlay {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(30, 0, 0, 0.98);
+      background-color: rgba(20, 0, 0, 0.99);
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 50;
-      animation: goFlash 0.1s infinite alternate;
     }
 
-    @keyframes goFlash {
-      0% { background-color: rgba(70, 0, 0, 0.98); }
-      100% { background-color: rgba(5, 0, 0, 0.99); }
-    }
-
-    .go-title {
-      font-size: 84px;
-      color: #ff0000;
-      font-weight: bold;
-      letter-spacing: 16px;
-      text-shadow: 0 0 20px #000, 0 0 50px #f00;
-      margin-bottom: 15px;
-    }
-
-    .go-sub {
-      font-size: 16px;
-      color: #ccc;
-      letter-spacing: 4px;
-      margin-bottom: 30px;
-      text-shadow: 0 0 5px #000;
-    }
+    .go-title { font-size: 84px; color: #cc0000; font-weight: bold; letter-spacing: 16px; text-shadow: 0 0 20px #000, 0 0 50px #900; margin-bottom: 15px; }
+    .go-sub { font-size: 16px; color: #bbb; letter-spacing: 4px; margin-bottom: 30px; }
 
     #clear-overlay {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(0, 20, 10, 0.95);
+      background-color: rgba(0, 15, 8, 0.96);
       display: none;
       flex-direction: column;
       justify-content: center;
@@ -369,20 +308,8 @@
       z-index: 50;
     }
 
-    .clear-title {
-      font-size: 64px;
-      color: #00ff88;
-      font-weight: bold;
-      letter-spacing: 12px;
-      text-shadow: 0 0 25px rgba(0, 255, 136, 0.8);
-      margin-bottom: 20px;
-    }
-
-    .clear-sub {
-      font-size: 15px;
-      color: #eee;
-      letter-spacing: 4px;
-    }
+    .clear-title { font-size: 64px; color: #00ff88; font-weight: bold; letter-spacing: 12px; text-shadow: 0 0 25px rgba(0, 255, 136, 0.8); margin-bottom: 20px; }
+    .clear-sub { font-size: 15px; color: #eee; letter-spacing: 4px; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -401,99 +328,67 @@
       <div>STAMINA</div>
       <div id="stamina-bar-bg"><div id="stamina-bar"></div></div>
     </div>
-    <div style="font-size:10px; color:#aaa; margin-top:4px;">[Esc] メニュー・設定</div>
+    <div style="font-size:10px; color:#888; margin-top:4px;">[Esc] メニュー・設定</div>
   </div>
 
-  <!-- ミニマップ UI -->
   <div id="minimap-container">
     <canvas id="minimap-canvas" width="150" height="150"></canvas>
   </div>
 
-  <!-- アイテムゲットチャンス UI -->
   <div id="chance-screen">
     <div class="chance-title">✨ CHANCE TIME ✨</div>
     <div class="chance-sub">宝箱を1つ選んで特殊効果を獲得せよ！</div>
-
     <div class="box-container">
-      <div class="chest-card" onclick="selectChanceBox(0)">
-        <div class="chest-icon">🎁</div>
-        <div class="chest-label">宝箱 壱</div>
-      </div>
-      <div class="chest-card" onclick="selectChanceBox(1)">
-        <div class="chest-icon">🎁</div>
-        <div class="chest-label">宝箱 弐</div>
-      </div>
-      <div class="chest-card" onclick="selectChanceBox(2)">
-        <div class="chest-icon">🎁</div>
-        <div class="chest-label">宝箱 参</div>
-      </div>
+      <div class="chest-card" onclick="selectChanceBox(0)"><div class="chest-icon">🎁</div><div class="chest-label">宝箱 壱</div></div>
+      <div class="chest-card" onclick="selectChanceBox(1)"><div class="chest-icon">🎁</div><div class="chest-label">宝箱 弐</div></div>
+      <div class="chest-card" onclick="selectChanceBox(2)"><div class="chest-icon">🎁</div><div class="chest-label">宝箱 参</div></div>
     </div>
-
     <div id="chance-result"></div>
   </div>
 
-  <!-- ポーズ画面 -->
   <div id="pause-menu">
     <div class="menu-title">P A U S E D</div>
     <div class="setting-group">
-      <div class="setting-item">
-        <label for="sens-slider">視点感度:</label>
-        <input type="range" id="sens-slider" min="1" max="20" value="4">
-      </div>
-      <div class="setting-item">
-        <label for="master-vol">主音量:</label>
-        <input type="range" id="master-vol" min="0" max="100" value="80">
-      </div>
-      <div class="setting-item">
-        <label for="bgm-vol">BGM音量:</label>
-        <input type="range" id="bgm-vol" min="0" max="100" value="70">
-      </div>
-      <div class="setting-item">
-        <label for="se-vol">心音・警告音:</label>
-        <input type="range" id="se-vol" min="0" max="100" value="90">
-      </div>
+      <div class="setting-item"><label for="sens-slider">視点感度:</label><input type="range" id="sens-slider" min="1" max="20" value="4"></div>
+      <div class="setting-item"><label for="master-vol">主音量:</label><input type="range" id="master-vol" min="0" max="100" value="80"></div>
+      <div class="setting-item"><label for="bgm-vol">恐怖BGM音量:</label><input type="range" id="bgm-vol" min="0" max="100" value="70"></div>
+      <div class="setting-item"><label for="se-vol">心音・警告音:</label><input type="range" id="se-vol" min="0" max="100" value="90"></div>
     </div>
     <button class="btn-action" id="resume-btn">再 開 す る</button>
   </div>
 
   <div id="message-log"></div>
 
-  <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- HIGH-ENERGY STREAM ANTHEM EDITION -</div>
+    <div class="subtitle">- WOLF BEAST HORROR EDITION -</div>
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点 | [Esc] ポーズ<br>
-      【マップ】右下のレーダーで <span style="color:#00ff88">自分</span>・<span style="color:#ffcc00">鍵</span>・<span style="color:#ff0000">敵</span> の位置を確認せよ。<br>
-      【チャンス】鍵を2個集めると <span style="color:#ffcc00">アイテムゲットチャンス</span> が発生！
+      【注意】闇夜を徘徊する<span style="color:#ff3333">狼型の凶獣</span>に見つかると即座に襲撃されます。
     </div>
   </div>
 
-  <!-- ゲームオーバー画面 -->
   <div id="gameover-overlay">
     <div class="go-title">S L A U G H T E R</div>
-    <div class="go-sub">肉体を切り刻まれ、あなたの魂は闇に呑まれた...</div>
+    <div class="go-sub">冷酷な獣の牙に引き裂かれ、闇に消えた...</div>
     <button class="btn-action" id="retry-btn">タイトルへ戻る</button>
   </div>
 
-  <!-- クリア画面 -->
   <div id="clear-overlay">
     <div class="clear-title">E S C A P E D</div>
-    <div class="clear-sub">生きてこの地獄を抜け出すことに成功した！</div>
+    <div class="clear-sub">生きてこの死の市を脱出することに成功した！</div>
     <button class="btn-action" id="clear-title-btn">タイトルへ戻る</button>
   </div>
 
   <div id="canvas-container"></div>
 
   <script>
-    // 設定変数
     let mouseSensitivity = 0.00064;
     let masterVolume = 0.8;
     let bgmVolume = 0.7;
     let seVolume = 0.9;
 
-    // GUI Elements
     const sensSlider = document.getElementById('sens-slider');
     const masterVolSlider = document.getElementById('master-vol');
     const bgmVolSlider = document.getElementById('bgm-vol');
@@ -504,8 +399,8 @@
     bgmVolSlider.addEventListener('input', (e) => { bgmVolume = e.target.value / 100; audio.updateVolumes(); });
     seVolSlider.addEventListener('input', (e) => { seVolume = e.target.value / 100; audio.updateVolumes(); });
 
-    // 新・ハイエネルギー配信用カスタム音楽エンジン (High-Energy Stream Anthem Engine)
-    class StreamerAnthemEngine {
+    // 本格ホラー＆不気味なダークアンビエント・音楽エンジン
+    class DarkHorrorAudioEngine {
       constructor() {
         this.ctx = null;
         this.isPlaying = false;
@@ -513,11 +408,9 @@
         this.bgmNode = null;
         this.seNode = null;
         this.chaseGain = null;
+        this.droneOsc = null;
         this.timer = null;
         this.stepCount = 0;
-        // マイナーペンタトニック＋アグレッシブなゲームミュージック音階
-        this.bassNotes = [55.00, 65.41, 73.42, 82.41]; // A1, C2, D2, E2
-        this.leadNotes = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; 
       }
 
       init() {
@@ -551,15 +444,32 @@
         this.isPlaying = true;
         this.stepCount = 0;
 
-        // 追跡用パルスゲインの初期化
         const now = this.ctx.currentTime;
+
+        // 不気味な低音ドローン（持続音）
+        this.droneOsc = this.ctx.createOscillator();
+        this.droneOsc.type = 'sawtooth';
+        this.droneOsc.frequency.setValueAtTime(41.2, now); // E1
+        const droneFilter = this.ctx.createBiquadFilter();
+        droneFilter.type = 'lowpass';
+        droneFilter.frequency.setValueAtTime(120, now);
+        
+        const droneGain = this.ctx.createGain();
+        droneGain.gain.setValueAtTime(0.25, now);
+
+        this.droneOsc.connect(droneFilter);
+        droneFilter.connect(droneGain);
+        droneGain.connect(this.bgmNode);
+        this.droneOsc.start();
+
+        // 追跡時の不気味なパルス
         this.chaseGain = this.ctx.createGain();
         this.chaseGain.gain.setValueAtTime(0.0, now);
         this.chaseGain.connect(this.seNode);
 
         const chaseOsc = this.ctx.createOscillator();
-        chaseOsc.type = 'sawtooth';
-        chaseOsc.frequency.setValueAtTime(45.0, now);
+        chaseOsc.type = 'square';
+        chaseOsc.frequency.setValueAtTime(32.7, now);
         chaseOsc.connect(this.chaseGain);
         chaseOsc.start();
 
@@ -567,23 +477,15 @@
       }
 
       startSequencer() {
-        const tempoMs = 145; // 高速で疾走感のあるBPM
+        const tempoMs = 500; // 不規則で恐怖感を煽るゆっくりした不気味な拍動
 
         const loop = () => {
           if (!this.isPlaying) return;
           const now = this.ctx.currentTime;
 
-          // 1. 16分音符ごとのキック・ベース刻み (ドライヴ感のあるリズム)
-          if (this.stepCount % 2 === 0) {
-            this.playKick(now);
-          }
-          if (this.stepCount % 4 === 2) {
-            this.playBassNote(now);
-          }
-
-          // 2. メロディーフレーズ (ゲーム配信のオープニングらしく盛り上がる高音リフ)
-          if (this.stepCount % 4 === 0 || this.stepCount % 4 === 3) {
-            this.playLeadNote(now);
+          // ランダムに鳴り響く不協和音の恐怖打楽器音
+          if (Math.random() < 0.65 || this.stepCount % 4 === 0) {
+            this.playHorrorHit(now);
           }
 
           this.stepCount = (this.stepCount + 1) % 16;
@@ -592,76 +494,38 @@
         loop();
       }
 
-      playKick(now) {
-        if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(130, now);
-        osc.frequency.exponentialRampYToValueAtTime ? osc.frequency.exponentialRampToValueAtTime(35, now + 0.12) : osc.frequency.linearRampToValueAtTime(35, now + 0.12);
-
-        gain.gain.setValueAtTime(0.6, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-        osc.connect(gain);
-        gain.connect(this.bgmNode);
-
-        osc.start(now);
-        osc.stop(now + 0.12);
-      }
-
-      playBassNote(now) {
+      playHorrorHit(now) {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
         const filter = this.ctx.createBiquadFilter();
         const gain = this.ctx.createGain();
 
-        osc.type = 'sawtooth';
-        const note = this.bassNotes[Math.floor((this.stepCount / 4) % this.bassNotes.length)];
-        osc.frequency.setValueAtTime(note, now);
+        osc.type = Math.random() < 0.5 ? 'sawtooth' : 'triangle';
+        const freqs = [55.0, 58.27, 65.41, 77.78]; // 不気味な短二度・減音程
+        osc.frequency.setValueAtTime(freqs[Math.floor(Math.random() * freqs.length)], now);
+        osc.frequency.exponentialRampToValueAtTime(20, now + 0.4);
 
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(400, now);
-        filter.frequency.linearRampToValueAtTime(1200, now + 0.1);
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(250, now);
 
         gain.gain.setValueAtTime(0.35, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
 
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(this.bgmNode);
 
         osc.start(now);
-        osc.stop(now + 0.25);
-      }
-
-      playLeadNote(now) {
-        if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'square';
-        const note = this.leadNotes[Math.floor(Math.random() * this.leadNotes.length)];
-        osc.frequency.setValueAtTime(note, now);
-
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-        osc.connect(gain);
-        gain.connect(this.bgmNode);
-
-        osc.start(now);
-        osc.stop(now + 0.18);
+        osc.stop(now + 0.4);
       }
 
       updateChaseVolume(distance) {
         if (!this.ctx || !this.isPlaying || !this.chaseGain) return;
-        const maxDist = 30.0;
+        const maxDist = 28.0;
         let volume = 0;
         if (distance < maxDist) {
           const factor = 1 - (distance / maxDist);
-          volume = Math.pow(factor, 1.4) * 0.9;
+          volume = Math.pow(factor, 1.5) * 0.95;
         }
         this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.05);
       }
@@ -673,17 +537,17 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(90, now);
-        osc.frequency.exponentialRampToValueAtTime(20, now + 0.15);
+        osc.frequency.setValueAtTime(75, now);
+        osc.frequency.exponentialRampYToValueAtTime ? osc.frequency.exponentialRampToValueAtTime(25, now + 0.18) : osc.frequency.linearRampToValueAtTime(25, now + 0.18);
 
-        gain.gain.setValueAtTime(0.8 * volumeRatio, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        gain.gain.setValueAtTime(0.9 * volumeRatio, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 0.15);
+        osc.stop(now + 0.18);
       }
 
       playKeyPickup() {
@@ -692,18 +556,18 @@
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.setValueAtTime(880.00, now + 0.08); // A5
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.1);
 
-        gain.gain.setValueAtTime(0.45, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 0.35);
+        osc.stop(now + 0.4);
       }
 
       playGameoverSound() {
@@ -713,29 +577,31 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.exponentialRampToValueAtTime(30, now + 1.2);
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(20, now + 1.5);
 
-        gain.gain.setValueAtTime(0.7, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        gain.gain.setValueAtTime(0.8, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 1.2);
+        osc.stop(now + 1.5);
       }
 
       stop() {
         if (!this.isPlaying) return;
         this.isPlaying = false;
         if (this.timer) clearTimeout(this.timer);
+        if (this.droneOsc) {
+          try { this.droneOsc.stop(); } catch(e) {}
+        }
       }
     }
 
-    const audio = new StreamerAnthemEngine();
+    const audio = new DarkHorrorAudioEngine();
 
-    // DOM Elements
     const container = document.getElementById('canvas-container');
     const titleScreen = document.getElementById('title-screen');
     const pauseMenu = document.getElementById('pause-menu');
@@ -758,10 +624,9 @@
     const clearOverlay = document.getElementById('clear-overlay');
     const flashOverlay = document.getElementById('flash-overlay');
 
-    // 3D Scene Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x010103);
-    scene.fog = new THREE.FogExp2(0x010103, 0.045);
+    scene.background = new THREE.Color(0x010102);
+    scene.fog = new THREE.FogExp2(0x010102, 0.05);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
     camera.rotation.order = 'YXZ';
@@ -776,34 +641,32 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0x1a2030, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x10121a, 0.4);
     scene.add(ambientLight);
 
-    const flashlight = new THREE.SpotLight(0xfff0d0, 4.5, 25, Math.PI / 4.2, 0.4, 1);
+    const flashlight = new THREE.SpotLight(0xffeed0, 4.2, 24, Math.PI / 4.2, 0.45, 1);
     camera.add(flashlight);
     flashlight.position.set(0, 0, 0);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // Floor
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(180, 160),
-      new THREE.MeshStandardMaterial({ color: 0x0d0d12, roughness: 0.95 })
+      new THREE.MeshStandardMaterial({ color: 0x0a0a0d, roughness: 0.95 })
     );
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // Building Generation
     function generateBuildingTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 128; canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0f0f13';
+      ctx.fillStyle = '#0b0b0f';
       ctx.fillRect(0, 0, 128, 256);
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 3; c++) {
-          if (Math.random() < 0.15) {
-            ctx.fillStyle = Math.random() < 0.5 ? '#e6c065' : '#5098bd';
+          if (Math.random() < 0.12) {
+            ctx.fillStyle = Math.random() < 0.5 ? '#b33600' : '#336688';
             ctx.fillRect(12 + c * 36, 10 + r * 28, 24, 18);
           }
         }
@@ -834,24 +697,23 @@
       const canvas = document.createElement('canvas');
       canvas.width = 512; canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#040101'; ctx.fillRect(0, 0, 512, 256);
-      ctx.font = 'Bold 90px serif'; ctx.fillStyle = '#cc0000'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#020101'; ctx.fillRect(0, 0, 512, 256);
+      ctx.font = 'Bold 90px serif'; ctx.fillStyle = '#8b0000'; ctx.textAlign = 'center';
       ctx.fillText('死 の 市', 256, 150);
 
       const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) }));
       signMesh.position.set(0, 5, -55);
       scene.add(signMesh);
 
-      const exitDoor = new THREE.Mesh(new THREE.BoxGeometry(3.5, 5, 0.2), new THREE.MeshStandardMaterial({ color: 0x080808 }));
+      const exitDoor = new THREE.Mesh(new THREE.BoxGeometry(3.5, 5, 0.2), new THREE.MeshStandardMaterial({ color: 0x050505 }));
       exitDoor.position.set(0, 2.5, -62);
       scene.add(exitDoor);
     }
     createMainSignAndDoor();
 
-    // Key Model
     function createKey3DModel() {
       const group = new THREE.Group();
-      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.85, emissive: 0x554400 });
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.85, emissive: 0x442200 });
       const head = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.04, 8, 16), goldMat);
       head.position.y = 0.4;
       group.add(head);
@@ -877,63 +739,99 @@
         const mesh = createKey3DModel();
         mesh.position.copy(pos);
         scene.add(mesh);
-        const pointLight = new THREE.PointLight(0xffaa00, 1.5, 5);
+        const pointLight = new THREE.PointLight(0xff8800, 1.5, 5);
         pointLight.position.copy(pos);
         scene.add(pointLight);
         keys.push({ mesh, light: pointLight, collected: false, pos: pos.clone() });
       });
     }
 
-    // Glowing Monsters
-    function createGlowingMonster(glowColorHex = 0xff0000, isBoss = false) {
+    // 狼型ビースト・モンスターのモデリング生成
+    function createWolfBeastMonster(eyeColorHex = 0xff0000, isBoss = false) {
       const group = new THREE.Group();
       const scale = isBoss ? 1.6 : 1.0;
 
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x050508, roughness: 0.5 });
-      const body = new THREE.Mesh(new THREE.ConeGeometry(0.25 * scale, 3.8 * scale, 5), bodyMat);
-      body.rotation.x = Math.PI;
-      body.position.y = 1.9 * scale;
-      group.add(body);
+      const furMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.8 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x050507, roughness: 0.9 });
 
-      const glowMat = new THREE.MeshBasicMaterial({ color: glowColorHex });
-      const core = new THREE.Mesh(new THREE.SphereGeometry(0.2 * scale, 8, 8), glowMat);
-      core.position.y = 2.0 * scale;
-      group.add(core);
+      // 四足歩行の胴体
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.9 * scale, 0.8 * scale, 1.8 * scale), furMat);
+      torso.position.y = 0.9 * scale;
+      group.add(torso);
 
-      const head = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35 * scale), bodyMat);
-      head.position.y = 3.6 * scale;
+      // 狼の頭部
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.55 * scale, 0.55 * scale, 0.8 * scale), furMat);
+      head.position.set(0, 1.35 * scale, -0.9 * scale);
       group.add(head);
 
-      for (let i = 0; i < (isBoss ? 8 : 4); i++) {
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06 * scale, 6, 6), glowMat);
-        eye.position.set((Math.random() - 0.5) * 0.35 * scale, (3.5 + (Math.random() - 0.5) * 0.3) * scale, -0.3 * scale);
-        group.add(eye);
-      }
+      // 鋭利なマズル（口元）
+      const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.35 * scale, 0.3 * scale, 0.6 * scale), darkMat);
+      muzzle.position.set(0, 1.25 * scale, -1.35 * scale);
+      group.add(muzzle);
 
-      const monsterLight = new THREE.PointLight(glowColorHex, isBoss ? 4.0 : 2.5, isBoss ? 12 : 7);
-      monsterLight.position.set(0, 2.5 * scale, 0);
+      // 狼の耳（左右）
+      const earMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.8 });
+      const leftEar = new THREE.Mesh(new THREE.ConeGeometry(0.12 * scale, 0.4 * scale, 4), earMat);
+      leftEar.position.set(0.22 * scale, 1.75 * scale, -0.8 * scale);
+      leftEar.rotation.z = -0.2;
+      group.add(leftEar);
+
+      const rightEar = leftEar.clone();
+      rightEar.position.x = -0.22 * scale;
+      rightEar.rotation.z = 0.2;
+      group.add(rightEar);
+
+      // 4本の脚
+      const legGeo = new THREE.BoxGeometry(0.22 * scale, 0.9 * scale, 0.22 * scale);
+      const leg1 = new THREE.Mesh(legGeo, darkMat);
+      leg1.position.set(0.35 * scale, 0.45 * scale, 0.6 * scale);
+      group.add(leg1);
+
+      const leg2 = leg1.clone();
+      leg2.position.set(-0.35 * scale, 0.45 * scale, 0.6 * scale);
+      group.add(leg2);
+
+      const leg3 = leg1.clone();
+      leg3.position.set(0.35 * scale, 0.45 * scale, -0.6 * scale);
+      group.add(leg3);
+
+      const leg4 = leg1.clone();
+      leg4.position.set(-0.35 * scale, 0.45 * scale, -0.6 * scale);
+      group.add(leg4);
+
+      // 恐ろしい赤い眼光
+      const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColorHex });
+      const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.06 * scale, 6, 6), eyeMat);
+      leftEye.position.set(0.18 * scale, 1.4 * scale, -1.25 * scale);
+      group.add(leftEye);
+
+      const rightEye = leftEye.clone();
+      rightEye.position.x = -0.18 * scale;
+      group.add(rightEye);
+
+      const monsterLight = new THREE.PointLight(eyeColorHex, isBoss ? 4.5 : 2.5, isBoss ? 12 : 7);
+      monsterLight.position.set(0, 1.2 * scale, -1.0 * scale);
       group.add(monsterLight);
 
-      return { group, head, body, light: monsterLight, isBoss };
+      return { group, head, light: monsterLight, isBoss };
     }
 
-    const monster1 = createGlowingMonster(0xff0000);
+    const monster1 = createWolfBeastMonster(0xff0000);
     monster1.group.position.set(0, 0, -65);
     scene.add(monster1.group);
 
-    const monster2 = createGlowingMonster(0xff00bb);
+    const monster2 = createWolfBeastMonster(0xff2266);
     monster2.group.position.set(-30, 0, -15);
     scene.add(monster2.group);
 
-    const bossMonster = createGlowingMonster(0xff0000, true);
+    const bossMonster = createWolfBeastMonster(0xff0000, true);
     bossMonster.group.position.set(0, -100, 0);
     scene.add(bossMonster.group);
 
     let isBossSpawned = false;
     let patrolTargetX = 30;
-    const patrolSpeed = 2.8;
+    const patrolSpeed = 3.2;
 
-    // Game Control States
     let isPlaying = false;
     let isPaused = false;
     let isChanceTime = false;
@@ -963,7 +861,6 @@
       setTimeout(() => { msgLog.style.opacity = '0'; }, 3000);
     }
 
-    // チャンスタイム関連機能
     function startChanceTime() {
       isChanceTime = true;
       document.exitPointerLock();
@@ -975,7 +872,7 @@
       const rewards = [
         { text: "⚡ スタミナ永久1.5倍 ＆ 全回復！", action: () => { stamina = 150; showMessage("スタミナの上限が大幅アップ！"); } },
         { text: "📡 ミニマップレーダー範囲拡張！", action: () => { mapScaleBoost = 0.9; showMessage("広域レーダーが有効化された！"); } },
-        { text: "❄️ 10秒間、モンスター足止め！", action: () => { monsterFreezeTimer = 10.0; showMessage("モンスターが金縛り状態になった！"); } }
+        { text: "❄️ 10秒間、獣の動きを凍結！", action: () => { monsterFreezeTimer = 10.0; showMessage("獣たちが恐怖で金縛り状態になった！"); } }
       ];
 
       const chosen = rewards[Math.floor(Math.random() * rewards.length)];
@@ -1045,7 +942,7 @@
 
       keyCountEl.textContent = `0 / ${keyPositions.length}`;
       staminaBar.style.width = '100%';
-      staminaBar.style.backgroundColor = '#00b359';
+      staminaBar.style.backgroundColor = '#008844';
 
       spawnKeys();
     }
@@ -1083,11 +980,7 @@
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.code === 'Escape') {
-        togglePause();
-        return;
-      }
-
+      if (e.code === 'Escape') { togglePause(); return; }
       if (isGameOver || isPaused || isChanceTime) return;
 
       switch (e.code) {
@@ -1123,11 +1016,10 @@
     }
 
     function moveMonsterWithCollision(monsterGroup, moveVec, radius = 0.4) {
-      if (monsterFreezeTimer > 0) return; // 金縛り状態
+      if (monsterFreezeTimer > 0) return;
 
       const oldX = monsterGroup.position.x;
       const oldZ = monsterGroup.position.z;
-
       const targetX = oldX + moveVec.x;
       const targetZ = oldZ + moveVec.z;
 
@@ -1169,7 +1061,6 @@
       clearOverlay.style.display = 'flex';
     }
 
-    // ミニマップ描写処理
     function renderMinimap() {
       const width = minimapCanvas.width;
       const height = minimapCanvas.height;
@@ -1178,20 +1069,17 @@
       const mapScale = mapScaleBoost;
 
       minimapCtx.clearRect(0, 0, width, height);
-
-      minimapCtx.fillStyle = 'rgba(5, 5, 10, 0.9)';
+      minimapCtx.fillStyle = 'rgba(4, 4, 8, 0.9)';
       minimapCtx.fillRect(0, 0, width, height);
 
-      minimapCtx.strokeStyle = 'rgba(0, 255, 136, 0.15)';
+      minimapCtx.strokeStyle = 'rgba(139, 0, 0, 0.2)';
       minimapCtx.lineWidth = 1;
       minimapCtx.beginPath();
       minimapCtx.arc(centerX, centerY, 30, 0, Math.PI * 2);
       minimapCtx.arc(centerX, centerY, 60, 0, Math.PI * 2);
-      minimapCtx.moveTo(centerX, 0); minimapCtx.lineTo(centerX, height);
-      minimapCtx.moveTo(0, centerY); minimapCtx.lineTo(width, centerY);
       minimapCtx.stroke();
 
-      minimapCtx.fillStyle = 'rgba(80, 80, 100, 0.4)';
+      minimapCtx.fillStyle = 'rgba(60, 60, 80, 0.4)';
       buildingColliders.forEach(b => {
         const dx = (b.minX + b.maxX) / 2 - player.position.x;
         const dz = (b.minZ + b.maxZ) / 2 - player.position.z;
@@ -1202,7 +1090,7 @@
         minimapCtx.fillRect(screenX - w / 2, screenY - h / 2, w, h);
       });
 
-      minimapCtx.fillStyle = '#ffcc00';
+      minimapCtx.fillStyle = '#ffaa00';
       keys.forEach(k => {
         if (!k.collected) {
           const dx = k.pos.x - player.position.x;
@@ -1224,7 +1112,7 @@
         const screenY = centerY + dz * mapScale;
 
         if (Math.hypot(screenX - centerX, screenY - centerY) < 70) {
-          minimapCtx.fillStyle = monsterFreezeTimer > 0 ? '#00ccff' : (isBoss ? '#ff0000' : '#ff3366');
+          minimapCtx.fillStyle = monsterFreezeTimer > 0 ? '#00ccff' : (isBoss ? '#ff0000' : '#ff3344');
           minimapCtx.beginPath();
           minimapCtx.arc(screenX, screenY, isBoss ? 5 : 4, 0, Math.PI * 2);
           minimapCtx.fill();
@@ -1250,7 +1138,6 @@
       minimapCtx.stroke();
     }
 
-    // Main Loop
     let clock = new THREE.Clock();
 
     function animate() {
@@ -1259,13 +1146,11 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      if (monsterFreezeTimer > 0) {
-        monsterFreezeTimer -= delta;
-      }
+      if (monsterFreezeTimer > 0) monsterFreezeTimer -= delta;
 
       [monster1, monster2, bossMonster].forEach((m) => {
         if (m.light) {
-          m.light.intensity = (m.isBoss ? 3.5 : 2.0) + Math.sin(time * 8) * 0.8;
+          m.light.intensity = (m.isBoss ? 4.5 : 2.5) + Math.sin(time * 12) * 1.0;
         }
       });
 
@@ -1298,14 +1183,14 @@
           if (stamina <= 0) {
             stamina = 0;
             isExhausted = true;
-            staminaBar.style.backgroundColor = '#ff3333';
+            staminaBar.style.backgroundColor = '#cc0000';
           }
         } else {
           stamina += 16 * delta;
           if (stamina >= maxStamina) {
             stamina = maxStamina;
             isExhausted = false;
-            staminaBar.style.backgroundColor = '#00b359';
+            staminaBar.style.backgroundColor = '#008844';
           }
         }
 
@@ -1336,7 +1221,6 @@
         player.position.x = Math.max(-42.0, Math.min(42.0, player.position.x));
         player.position.z = Math.max(-63, Math.min(35, player.position.z));
 
-        // Pickup Keys
         keys.forEach(k => {
           if (!k.collected && player.position.distanceTo(k.mesh.position) < 1.5) {
             k.collected = true;
@@ -1346,14 +1230,13 @@
             keyCountEl.textContent = `${keysCollectedCount} / ${keyPositions.length}`;
             audio.playKeyPickup();
 
-            // 鍵を2つ入手でチャンスタイム発動
             if (keysCollectedCount === 2 && !chanceTriggered) {
               chanceTriggered = true;
               setTimeout(startChanceTime, 500);
             } else if (keysCollectedCount === 4) {
               isBossSpawned = true;
               bossMonster.group.position.set(0, 0, -60);
-              showMessage('⚠️ 警 告 ⚠️ 超巨大な凶悪異形が解き放たれた！！');
+              showMessage('⚠️ 警 告 ⚠️ 巨大な狼の王が解き放たれた！！');
             } else if (keysCollectedCount < keyPositions.length) {
               showMessage(`鍵を手に入れた (${keysCollectedCount}/${keyPositions.length})`);
             } else {
@@ -1378,7 +1261,7 @@
 
         if (player.position.z < 12 && !isChasing) {
           isChasing = true;
-          showMessage('何かが目覚めた...！逃げろ！');
+          showMessage('背後から獣の足音が聞こえた...！');
         }
 
         if (isChasing) {
@@ -1392,7 +1275,7 @@
             heartbeatTimer = 0;
           }
 
-          const chaseSpeed = 3.9 * delta;
+          const chaseSpeed = 4.1 * delta;
           const chaseDir = new THREE.Vector3().subVectors(pPos, m1Pos).normalize();
           moveMonsterWithCollision(monster1.group, chaseDir.multiplyScalar(chaseSpeed), 0.4);
 
@@ -1425,7 +1308,7 @@
 
           bossMonster.group.lookAt(player.position.x, 0, player.position.z);
 
-          const bossSpeed = 4.8 * delta;
+          const bossSpeed = 5.0 * delta;
           const bossDir = new THREE.Vector3().subVectors(pPos, mBossPos).normalize();
           moveMonsterWithCollision(bossMonster.group, bossDir.multiplyScalar(bossSpeed), 0.6);
 
