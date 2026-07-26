@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Stage 2 & Radar & Building Collision</title>
+  <title>死の市 - Chance Time & Horror Edition</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -36,6 +36,17 @@
       );
       box-shadow: inset 0 0 160px rgba(0,0,0,0.95);
       z-index: 10;
+    }
+
+    #flash-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(255, 0, 0, 0.85);
+      pointer-events: none;
+      z-index: 15;
+      opacity: 0;
+      transition: opacity 0.08s ease;
     }
 
     #crosshair {
@@ -84,26 +95,25 @@
       transition: width 0.1s linear, background-color 0.2s;
     }
 
-    /* 円形レーダーミニマップ UI */
+    /* ミニマップ */
     #minimap-container {
       position: absolute;
       bottom: 20px;
       right: 20px;
-      width: 160px;
-      height: 160px;
-      background: rgba(5, 10, 15, 0.9);
-      border: 2px solid #00ff88;
+      width: 150px;
+      height: 150px;
+      background: rgba(10, 10, 15, 0.85);
+      border: 2px solid #555;
       border-radius: 50%;
       z-index: 25;
       display: none;
-      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.9);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.9), inset 0 0 10px rgba(0, 0, 0, 0.8);
       overflow: hidden;
     }
 
     #minimap-canvas {
       width: 100%;
       height: 100%;
-      display: block;
     }
 
     /* アイテムゲットチャンス画面 */
@@ -372,7 +382,6 @@
       font-size: 15px;
       color: #eee;
       letter-spacing: 4px;
-      margin-bottom: 25px;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -380,11 +389,12 @@
 <body>
 
   <div id="vhs-overlay"></div>
+  <div id="flash-overlay"></div>
   <div id="crosshair"></div>
 
   <div id="ui">
     <div class="hud-box">
-      <div id="stage-hud-title">『死の市』 ステージ 1</div>
+      <div>『死の市』からの生還</div>
       <div style="margin-top:4px;">鍵: <span id="key-count" style="color:#ff3333; font-weight:bold;">0 / 5</span></div>
     </div>
     <div class="hud-box">
@@ -394,9 +404,9 @@
     <div style="font-size:10px; color:#aaa; margin-top:4px;">[Esc] メニュー・設定</div>
   </div>
 
-  <!-- 円形レーダーミニマップ UI -->
+  <!-- ミニマップ UI -->
   <div id="minimap-container">
-    <canvas id="minimap-canvas" width="160" height="160"></canvas>
+    <canvas id="minimap-canvas" width="150" height="150"></canvas>
   </div>
 
   <!-- アイテムゲットチャンス UI -->
@@ -435,11 +445,11 @@
         <input type="range" id="master-vol" min="0" max="100" value="80">
       </div>
       <div class="setting-item">
-        <label for="bgm-vol">高揚感BGM音量:</label>
+        <label for="bgm-vol">BGM音量:</label>
         <input type="range" id="bgm-vol" min="0" max="100" value="70">
       </div>
       <div class="setting-item">
-        <label for="se-vol">チェイス・警告音:</label>
+        <label for="se-vol">心音・警告音:</label>
         <input type="range" id="se-vol" min="0" max="100" value="90">
       </div>
     </div>
@@ -451,12 +461,12 @@
   <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- MULTI-STAGE RADAR EDITION -</div>
+    <div class="subtitle">- CHANCE TIME EDITION -</div>
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点 | [Esc] ポーズ<br>
-      【レーダー】右下の円形ミニマップで <span style="color:#00ff88">自機</span>・<span style="color:#ffcc00">鍵</span>・<span style="color:#ff0000">敵</span> の位置を索敵せよ。<br>
-      【建物判定】すべての建物に衝突判定（壁）が追加されました。
+      【マップ】右下のレーダーで <span style="color:#00ff88">自分</span>・<span style="color:#ffcc00">鍵</span>・<span style="color:#ff0000">敵</span> の位置を確認せよ。<br>
+      【チャンス】鍵を2個集めると <span style="color:#ffcc00">アイテムゲットチャンス</span> が発生！
     </div>
   </div>
 
@@ -467,11 +477,11 @@
     <button class="btn-action" id="retry-btn">タイトルへ戻る</button>
   </div>
 
-  <!-- クリア画面（ステージ2進行 or ゲーム完全クリア用） -->
+  <!-- クリア画面 -->
   <div id="clear-overlay">
-    <div class="clear-title" id="clear-title-text">E S C A P E D</div>
-    <div class="clear-sub" id="clear-sub-text">ステージ1をクリアしました！</div>
-    <button class="btn-action" id="next-stage-btn">ステージ 2 へ 進 む</button>
+    <div class="clear-title">E S C A P E D</div>
+    <div class="clear-sub">生きてこの地獄を抜け出すことに成功した！</div>
+    <button class="btn-action" id="clear-title-btn">タイトルへ戻る</button>
   </div>
 
   <div id="canvas-container"></div>
@@ -483,6 +493,7 @@
     let bgmVolume = 0.7;
     let seVolume = 0.9;
 
+    // GUI Elements
     const sensSlider = document.getElementById('sens-slider');
     const masterVolSlider = document.getElementById('master-vol');
     const bgmVolSlider = document.getElementById('bgm-vol');
@@ -493,8 +504,8 @@
     bgmVolSlider.addEventListener('input', (e) => { bgmVolume = e.target.value / 100; audio.updateVolumes(); });
     seVolSlider.addEventListener('input', (e) => { seVolume = e.target.value / 100; audio.updateVolumes(); });
 
-    // Streamer High-Energy & Dynamic Chase Audio Engine
-    class StreamerHorrorMusicEngine {
+    // Audio Engine
+    class HorrorMusicEngine {
       constructor() {
         this.ctx = null;
         this.isPlaying = false;
@@ -502,9 +513,8 @@
         this.bgmNode = null;
         this.seNode = null;
         this.chaseGain = null;
-        this.stepCounter = 0;
-        this.timer = null;
-        this.scale = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
+        this.musicInterval = null;
+        this.notes = [130.81, 155.56, 174.61, 185.00, 196.00, 246.94, 261.63, 311.13];
       }
 
       init() {
@@ -536,19 +546,19 @@
         if (this.ctx.state === 'suspended') this.ctx.resume();
         if (this.isPlaying) return;
         this.isPlaying = true;
-        this.stepCounter = 0;
 
         const now = this.ctx.currentTime;
+
         const bassOsc = this.ctx.createOscillator();
-        bassOsc.type = 'sawtooth';
-        bassOsc.frequency.setValueAtTime(110, now);
+        bassOsc.type = 'sine';
+        bassOsc.frequency.setValueAtTime(65.41, now);
 
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(350, now);
+        const bassFilter = this.ctx.createBiquadFilter();
+        bassFilter.type = 'lowpass';
+        bassFilter.frequency.setValueAtTime(200, now);
 
-        bassOsc.connect(filter);
-        filter.connect(this.bgmNode);
+        bassOsc.connect(bassFilter);
+        bassFilter.connect(this.bgmNode);
         bassOsc.start();
 
         this.chaseGain = this.ctx.createGain();
@@ -556,56 +566,53 @@
         this.chaseGain.connect(this.seNode);
 
         const chaseOsc = this.ctx.createOscillator();
-        chaseOsc.type = 'sawtooth';
-        chaseOsc.frequency.setValueAtTime(73.42, now);
+        chaseOsc.type = 'triangle';
+        chaseOsc.frequency.setValueAtTime(50.0, now);
+
         chaseOsc.connect(this.chaseGain);
         chaseOsc.start();
 
-        this.startArpeggioLoop();
+        this.startMelodySequence();
       }
 
-      startArpeggioLoop() {
-        const loop = () => {
+      startMelodySequence() {
+        const step = () => {
           if (!this.isPlaying) return;
-          this.playArpNote();
-          this.timer = setTimeout(loop, 220);
+          this.playPianoNote();
+          const nextTime = Math.random() * 800 + 400;
+          this.musicInterval = setTimeout(step, nextTime);
         };
-        loop();
+        step();
       }
 
-      playArpNote() {
+      playPianoNote() {
         if (!this.ctx || !this.isPlaying) return;
         const now = this.ctx.currentTime;
 
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = (this.stepCounter % 4 === 0) ? 'square' : 'triangle';
-        const noteIndex = Math.floor(Math.sin(this.stepCounter * 0.5) * 3 + 4) % this.scale.length;
-        const freq = this.scale[Math.abs(noteIndex)];
-        const transpose = (this.stepCounter % 32 < 16) ? 1.0 : 1.125;
-        
-        osc.frequency.setValueAtTime(freq * transpose, now);
+        osc.type = 'triangle';
+        const freq = this.notes[Math.floor(Math.random() * this.notes.length)];
+        osc.frequency.setValueAtTime(freq, now);
 
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
 
         osc.connect(gain);
         gain.connect(this.bgmNode);
 
         osc.start(now);
-        osc.stop(now + 0.35);
-
-        this.stepCounter++;
+        osc.stop(now + 2.0);
       }
 
       updateChaseVolume(distance) {
         if (!this.ctx || !this.isPlaying || !this.chaseGain) return;
-        const maxDist = 22.0;
+        const maxDist = 32.0;
         let volume = 0;
         if (distance < maxDist) {
           const factor = 1 - (distance / maxDist);
-          volume = Math.pow(factor, 2.0) * 1.6;
+          volume = Math.pow(factor, 1.2) * 0.8;
         }
         this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.05);
       }
@@ -617,112 +624,67 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(90, now);
-        osc.frequency.exponentialRampToValueAtTime(20, now + 0.15);
+        osc.frequency.setValueAtTime(80, now);
+        osc.frequency.exponentialRampToValueAtTime(15, now + 0.16);
 
-        gain.gain.setValueAtTime(0.9 * volumeRatio, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        gain.gain.setValueAtTime(0.85 * volumeRatio, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
         osc.connect(gain);
         gain.connect(this.seNode);
 
         osc.start(now);
-        osc.stop(now + 0.15);
+        osc.stop(now + 0.16);
       }
 
       playKeyPickup() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, i) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + i * 0.08);
-
-          gain.gain.setValueAtTime(0.3, now + i * 0.08);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
-
-          osc.connect(gain);
-          gain.connect(this.seNode);
-
-          osc.start(now + i * 0.08);
-          osc.stop(now + i * 0.08 + 0.25);
-        });
-      }
-
-      playJumpscareGameover() {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const bufferSize = this.ctx.sampleRate * 1.5;
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = Math.random() * 2 - 1;
-        }
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(800, now);
-        filter.Q.setValueAtTime(3.0, now);
-
-        const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(1.2, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
-
-        noise.connect(filter);
-        filter.connect(noiseGain);
-        noiseGain.connect(this.seNode);
-
         const osc = this.ctx.createOscillator();
-        const oscGain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.exponentialRampToValueAtTime(25, now + 1.5);
+        const gain = this.ctx.createGain();
 
-        oscGain.gain.setValueAtTime(1.0, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(783.99, now + 0.1);
 
-        osc.connect(oscGain);
-        oscGain.connect(this.seNode);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
 
-        noise.start(now);
+        osc.connect(gain);
+        gain.connect(this.seNode);
+
         osc.start(now);
-        noise.stop(now + 1.5);
-        osc.stop(now + 1.5);
+        osc.stop(now + 0.4);
       }
 
-      playClearFanfare() {
+      playGameoverSound() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        const clearNotes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
-        clearNotes.forEach((freq, i) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
 
-          gain.gain.setValueAtTime(0.35, now + i * 0.12);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.5);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(20, now + 1.5);
 
-          osc.connect(gain);
-          gain.connect(this.seNode);
+        gain.gain.setValueAtTime(0.7, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
 
-          osc.start(now + i * 0.12);
-          osc.stop(now + i * 0.12 + 0.5);
-        });
+        osc.connect(gain);
+        gain.connect(this.seNode);
+
+        osc.start(now);
+        osc.stop(now + 1.5);
       }
 
       stop() {
         if (!this.isPlaying) return;
         this.isPlaying = false;
-        if (this.timer) clearTimeout(this.timer);
+        if (this.musicInterval) clearTimeout(this.musicInterval);
       }
     }
 
-    const audio = new StreamerHorrorMusicEngine();
+    const audio = new HorrorMusicEngine();
 
     // DOM Elements
     const container = document.getElementById('canvas-container');
@@ -733,7 +695,7 @@
     const startBtn = document.getElementById('start-btn');
     const resumeBtn = document.getElementById('resume-btn');
     const retryBtn = document.getElementById('retry-btn');
-    const nextStageBtn = document.getElementById('next-stage-btn');
+    const clearTitleBtn = document.getElementById('clear-title-btn');
     const crosshair = document.getElementById('crosshair');
     const ui = document.getElementById('ui');
     const minimapContainer = document.getElementById('minimap-container');
@@ -741,13 +703,11 @@
     const minimapCtx = minimapCanvas.getContext('2d');
 
     const keyCountEl = document.getElementById('key-count');
-    const stageHudTitle = document.getElementById('stage-hud-title');
     const staminaBar = document.getElementById('stamina-bar');
     const msgLog = document.getElementById('message-log');
     const gameoverOverlay = document.getElementById('gameover-overlay');
     const clearOverlay = document.getElementById('clear-overlay');
-    const clearTitleText = document.getElementById('clear-title-text');
-    const clearSubText = document.getElementById('clear-sub-text');
+    const flashOverlay = document.getElementById('flash-overlay');
 
     // 3D Scene Setup
     const scene = new THREE.Scene();
@@ -784,21 +744,17 @@
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // Building Generation with Accurate Collisions
-    const buildingColliders = [];
-    const dynamicObjectsGroup = new THREE.Group();
-    scene.add(dynamicObjectsGroup);
-
-    function generateBuildingTexture(isStage2 = false) {
+    // Building Generation
+    function generateBuildingTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 128; canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = isStage2 ? '#120505' : '#0f0f13';
+      ctx.fillStyle = '#0f0f13';
       ctx.fillRect(0, 0, 128, 256);
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 3; c++) {
           if (Math.random() < 0.15) {
-            ctx.fillStyle = isStage2 ? '#ff3300' : (Math.random() < 0.5 ? '#e6c065' : '#5098bd');
+            ctx.fillStyle = Math.random() < 0.5 ? '#e6c065' : '#5098bd';
             ctx.fillRect(12 + c * 36, 10 + r * 28, 24, 18);
           }
         }
@@ -806,48 +762,42 @@
       return new THREE.CanvasTexture(canvas);
     }
 
-    const stage1Texture = generateBuildingTexture(false);
-    const stage2Texture = generateBuildingTexture(true);
+    const bldgTexture = generateBuildingTexture();
+    const buildingColliders = [];
 
-    function buildCity(isStage2 = false) {
-      // Clear previous colliders & objects
-      buildingColliders.length = 0;
-      while(dynamicObjectsGroup.children.length > 0){ 
-        dynamicObjectsGroup.remove(dynamicObjectsGroup.children[0]); 
-      }
-
-      const mat = new THREE.MeshStandardMaterial({ map: isStage2 ? stage2Texture : stage1Texture, roughness: 0.85 });
-      
+    function buildWideCity() {
+      const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.85 });
       for (let z = -70; z <= 50; z += 18) {
         for (let x = -45; x <= 45; x += 30) {
           if (Math.abs(x) < 8 && z > -50) continue;
-          const h = 10 + (Math.abs(x * z) % (isStage2 ? 14 : 8));
-          const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), mat);
+          const h = 10 + (Math.abs(x * z) % 8);
+          const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), bldgMat);
           const posX = x + (z % 4);
           bldg.position.set(posX, h / 2, z);
-          dynamicObjectsGroup.add(bldg);
-          
-          // 正確な当たり判定用の境界ボックスを登録
+          scene.add(bldg);
           buildingColliders.push({ minX: posX - 8, maxX: posX + 8, minZ: z - 7, maxZ: z + 7 });
         }
       }
+    }
+    buildWideCity();
 
-      // Exit Door Sign
+    function createMainSignAndDoor() {
       const canvas = document.createElement('canvas');
       canvas.width = 512; canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = isStage2 ? '#1a0000' : '#040101'; ctx.fillRect(0, 0, 512, 256);
-      ctx.font = 'Bold 90px serif'; ctx.fillStyle = isStage2 ? '#ff0055' : '#cc0000'; ctx.textAlign = 'center';
-      ctx.fillText(isStage2 ? '深 淵 の 扉' : '死 の 市', 256, 150);
+      ctx.fillStyle = '#040101'; ctx.fillRect(0, 0, 512, 256);
+      ctx.font = 'Bold 90px serif'; ctx.fillStyle = '#cc0000'; ctx.textAlign = 'center';
+      ctx.fillText('死 の 市', 256, 150);
 
       const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) }));
       signMesh.position.set(0, 5, -55);
-      dynamicObjectsGroup.add(signMesh);
+      scene.add(signMesh);
 
       const exitDoor = new THREE.Mesh(new THREE.BoxGeometry(3.5, 5, 0.2), new THREE.MeshStandardMaterial({ color: 0x080808 }));
       exitDoor.position.set(0, 2.5, -62);
-      dynamicObjectsGroup.add(exitDoor);
+      scene.add(exitDoor);
     }
+    createMainSignAndDoor();
 
     // Key Model
     function createKey3DModel() {
@@ -863,7 +813,7 @@
     }
 
     const keys = [];
-    const keyPositionsStage1 = [
+    const keyPositions = [
       new THREE.Vector3(-32, 0.8, 15),
       new THREE.Vector3(32, 0.8, -10),
       new THREE.Vector3(-15, 0.8, -42),
@@ -871,25 +821,16 @@
       new THREE.Vector3(-35, 0.8, -25)
     ];
 
-    const keyPositionsStage2 = [
-      new THREE.Vector3(-38, 0.8, 20),
-      new THREE.Vector3(38, 0.8, 5),
-      new THREE.Vector3(-25, 0.8, -50),
-      new THREE.Vector3(25, 0.8, -35),
-      new THREE.Vector3(0, 0.8, -20)
-    ];
-
-    function spawnKeys(isStage2 = false) {
-      keys.forEach(k => { dynamicObjectsGroup.remove(k.mesh); if(k.light) dynamicObjectsGroup.remove(k.light); });
+    function spawnKeys() {
+      keys.forEach(k => { scene.remove(k.mesh); if(k.light) scene.remove(k.light); });
       keys.length = 0;
-      const positions = isStage2 ? keyPositionsStage2 : keyPositionsStage1;
-      positions.forEach(pos => {
+      keyPositions.forEach(pos => {
         const mesh = createKey3DModel();
         mesh.position.copy(pos);
-        dynamicObjectsGroup.add(mesh);
-        const pointLight = new THREE.PointLight(isStage2 ? 0xff0055 : 0xffaa00, 1.5, 5);
+        scene.add(mesh);
+        const pointLight = new THREE.PointLight(0xffaa00, 1.5, 5);
         pointLight.position.copy(pos);
-        dynamicObjectsGroup.add(pointLight);
+        scene.add(pointLight);
         keys.push({ mesh, light: pointLight, collected: false, pos: pos.clone() });
       });
     }
@@ -939,17 +880,19 @@
     bossMonster.group.position.set(0, -100, 0);
     scene.add(bossMonster.group);
 
-    let currentStage = 1;
     let isBossSpawned = false;
     let patrolTargetX = 30;
     let patrolSpeed = 2.8;
 
+    // Game Control States
     let isPlaying = false;
     let isPaused = false;
     let isChanceTime = false;
     let chanceTriggered = false;
     let monsterFreezeTimer = 0;
+    let mapScaleBoost = 1.6;
 
+    let isChasing = false;
     let isGameOver = false;
     let isCleared = false;
 
@@ -962,12 +905,16 @@
     let isSprinting = false;
     let heartbeatTimer = 0;
 
+    let isJumpingOver = false;
+    let jumpTime = 0;
+
     function showMessage(msg) {
       msgLog.textContent = msg;
       msgLog.style.opacity = '1';
       setTimeout(() => { msgLog.style.opacity = '0'; }, 3000);
     }
 
+    // チャンスタイム関連機能
     function startChanceTime() {
       isChanceTime = true;
       document.exitPointerLock();
@@ -978,8 +925,8 @@
     window.selectChanceBox = function(boxIndex) {
       const rewards = [
         { text: "⚡ スタミナ永久1.5倍 ＆ 全回復！", action: () => { stamina = 150; showMessage("スタミナの上限が大幅アップ！"); } },
-        { text: "❄️ 10秒間、モンスター足止め！", action: () => { monsterFreezeTimer = 10.0; showMessage("モンスターが金縛り状態になった！"); } },
-        { text: "💖 体力＆全ステータス強化！", action: () => { stamina = 150; showMessage("超強化状態になりました！"); } }
+        { text: "📡 ミニマップレーダー範囲拡張！", action: () => { mapScaleBoost = 0.9; showMessage("広域レーダーが有効化された！"); } },
+        { text: "❄️ 10秒間、モンスター足止め！", action: () => { monsterFreezeTimer = 10.0; showMessage("モンスターが金縛り状態になった！"); } }
       ];
 
       const chosen = rewards[Math.floor(Math.random() * rewards.length)];
@@ -1020,20 +967,14 @@
       minimapContainer.style.display = 'none';
       isPaused = false;
       isChanceTime = false;
-      currentStage = 1;
       resetGame();
     }
 
-    function resetGame(stageNum = 1) {
-      currentStage = stageNum;
+    function resetGame() {
       player.position.set(0, 1.6, 25);
       player.rotation.set(0, 0, 0);
       camera.rotation.set(0, 0, 0);
       
-      buildCity(currentStage === 2);
-      spawnKeys(currentStage === 2);
-
-      const mSpeedFactor = currentStage === 2 ? 1.35 : 1.0;
       monster1.group.position.set(0, 0, -65);
       monster2.group.position.set(-30, 0, -15);
       bossMonster.group.position.set(0, -100, 0);
@@ -1041,38 +982,32 @@
       isBossSpawned = false;
       patrolTargetX = 30;
 
+      isChasing = false;
       isGameOver = false;
       isCleared = false;
+      isJumpingOver = false;
       chanceTriggered = false;
       monsterFreezeTimer = 0;
+      mapScaleBoost = 1.6;
 
       keysCollectedCount = 0;
       stamina = maxStamina;
       isExhausted = false;
 
-      stageHudTitle.textContent = currentStage === 2 ? '『深淵の暗渠』 ステージ 2' : '『死の市』 ステージ 1';
-      keyCountEl.textContent = `0 / ${keys.length}`;
+      keyCountEl.textContent = `0 / ${keyPositions.length}`;
       staminaBar.style.width = '100%';
       staminaBar.style.backgroundColor = '#00b359';
+
+      spawnKeys();
     }
 
     startBtn.addEventListener('click', () => {
-      resetGame(1);
+      resetGame();
       document.body.requestPointerLock();
     });
 
     retryBtn.addEventListener('click', returnToTitle);
-
-    nextStageBtn.addEventListener('click', () => {
-      clearOverlay.style.display = 'none';
-      if (currentStage === 1) {
-        resetGame(2);
-        document.body.requestPointerLock();
-        audio.start();
-      } else {
-        returnToTitle();
-      }
-    });
+    clearTitleBtn.addEventListener('click', returnToTitle);
 
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement === document.body) {
@@ -1127,8 +1062,7 @@
       }
     });
 
-    // プレイヤーのビル衝突判定（正確な壁当たり）
-    function checkBuildingCollision(newX, newZ, radius = 0.5) {
+    function checkBuildingCollision(newX, newZ, radius = 0.6) {
       for (let i = 0; i < buildingColliders.length; i++) {
         const b = buildingColliders[i];
         if (newX + radius > b.minX && newX - radius < b.maxX &&
@@ -1176,7 +1110,6 @@
       const nextX = player.position.x + moveX;
       const nextZ = player.position.z + moveZ;
 
-      // X軸・Z軸個別に判定して壁スライド移動をスムーズに実現
       if (!checkBuildingCollision(nextX, player.position.z)) {
         player.position.x = nextX;
       }
@@ -1210,8 +1143,8 @@
           k.mesh.rotation.y += delta * 2.0;
           if (player.position.distanceTo(k.pos) < 1.8) {
             k.collected = true;
-            dynamicObjectsGroup.remove(k.mesh);
-            dynamicObjectsGroup.remove(k.light);
+            scene.remove(k.mesh);
+            scene.remove(k.light);
             keysCollectedCount++;
             audio.playKeyPickup();
             keyCountEl.textContent = `${keysCollectedCount} / ${keys.length}`;
@@ -1232,11 +1165,10 @@
       });
 
       if (monsterFreezeTimer <= 0) {
-        const speedMultiplier = currentStage === 2 ? 1.3 : 1.0;
         const dist1 = monster1.group.position.distanceTo(player.position);
-        if (dist1 < 20) {
+        if (dist1 < 18) {
           monster1.group.lookAt(player.position.x, monster1.group.position.y, player.position.z);
-          monster1.group.translateZ(3.8 * speedMultiplier * delta);
+          monster1.group.translateZ(3.5 * delta);
         } else {
           monster1.group.position.x += patrolSpeed * delta;
           if (monster1.group.position.x > 35 || monster1.group.position.x < -35) {
@@ -1245,14 +1177,14 @@
         }
 
         const dist2 = monster2.group.position.distanceTo(player.position);
-        if (dist2 < 22) {
+        if (dist2 < 20) {
           monster2.group.lookAt(player.position.x, monster2.group.position.y, player.position.z);
-          monster2.group.translateZ(4.2 * speedMultiplier * delta);
+          monster2.group.translateZ(4.0 * delta);
         }
 
         if (isBossSpawned) {
-          bossMonster.group.lookAt(player.position.x, monster2.group.position.y, player.position.z);
-          bossMonster.group.translateZ(5.0 * speedMultiplier * delta);
+          bossMonster.group.lookAt(player.position.x, bossMonster.group.position.y, player.position.z);
+          bossMonster.group.translateZ(4.8 * delta);
           const distBoss = bossMonster.group.position.distanceTo(player.position);
           if (distBoss < 1.5) {
             triggerGameOver();
@@ -1286,7 +1218,7 @@
       if (isGameOver || isCleared) return;
       isGameOver = true;
       audio.stop();
-      audio.playJumpscareGameover();
+      audio.playGameoverSound();
       document.exitPointerLock();
       crosshair.style.display = 'none';
       ui.style.display = 'none';
@@ -1298,66 +1230,39 @@
       if (isGameOver || isCleared) return;
       isCleared = true;
       audio.stop();
-      audio.playClearFanfare();
       document.exitPointerLock();
       crosshair.style.display = 'none';
       ui.style.display = 'none';
       minimapContainer.style.display = 'none';
-
-      if (currentStage === 1) {
-        clearTitleText.textContent = "STAGE 1 CLEAR";
-        clearSubText.textContent = "おめでとうございます！ステージ2へ進みます。";
-        nextStageBtn.textContent = "ステージ 2 へ 進 む";
-      } else {
-        clearTitleText.textContent = "ALL CLEARED!";
-        clearSubText.textContent = "すべての地獄から完全に生還しました！お見事です！";
-        nextStageBtn.textContent = "タイトルへ戻る";
-      }
       clearOverlay.style.display = 'flex';
     }
 
-    // 正確な円形レーダーの描画ループ
     function drawMinimap() {
       requestAnimationFrame(drawMinimap);
       if (!isPlaying || isPaused || isChanceTime) return;
 
-      const size = 160;
-      minimapCtx.clearRect(0, 0, size, size);
+      minimapCtx.clearRect(0, 0, 150, 150);
 
-      // レーダー背景と円形クリッピング
-      minimapCtx.save();
-      minimapCtx.beginPath();
-      minimapCtx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-      minimapCtx.clip();
+      minimapCtx.fillStyle = 'rgba(10, 10, 15, 0.9)';
+      minimapCtx.fillRect(0, 0, 150, 150);
 
-      minimapCtx.fillStyle = 'rgba(5, 15, 10, 0.85)';
-      minimapCtx.fillRect(0, 0, size, size);
+      const cx = 75;
+      const cy = 75;
+      const scale = mapScaleBoost * 2.5;
 
-      // レーダーの同心円グリッド線
-      minimapCtx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
-      minimapCtx.lineWidth = 1;
-      minimapCtx.beginPath();
-      minimapCtx.arc(size / 2, size / 2, 40, 0, Math.PI * 2);
-      minimapCtx.arc(size / 2, size / 2, 70, 0, Math.PI * 2);
-      minimapCtx.stroke();
-
-      const cx = size / 2;
-      const cy = size / 2;
-      const scale = 2.4; // 索敵スケール
-
-      // 鍵の位置をレーダーに表示
       keys.forEach(k => {
         if (!k.collected) {
           const rx = cx + (k.pos.x - player.position.x) * scale;
           const rz = cy + (k.pos.z - player.position.z) * scale;
-          minimapCtx.fillStyle = '#ffcc00';
-          minimapCtx.beginPath();
-          minimapCtx.arc(rx, rz, 3.5, 0, Math.PI * 2);
-          minimapCtx.fill();
+          if (rx >= 0 && rx <= 150 && rz >= 0 && rz <= 150) {
+            minimapCtx.fillStyle = '#ffcc00';
+            minimapCtx.beginPath();
+            minimapCtx.arc(rx, rz, 3.5, 0, Math.PI * 2);
+            minimapCtx.fill();
+          }
         }
       });
 
-      // 敵1
       const m1x = cx + (monster1.group.position.x - player.position.x) * scale;
       const m1z = cy + (monster1.group.position.z - player.position.z) * scale;
       minimapCtx.fillStyle = '#ff0000';
@@ -1365,7 +1270,6 @@
       minimapCtx.arc(m1x, m1z, 4, 0, Math.PI * 2);
       minimapCtx.fill();
 
-      // 敵2
       const m2x = cx + (monster2.group.position.x - player.position.x) * scale;
       const m2z = cy + (monster2.group.position.z - player.position.z) * scale;
       minimapCtx.fillStyle = '#ff00bb';
@@ -1373,7 +1277,6 @@
       minimapCtx.arc(m2x, m2z, 4, 0, Math.PI * 2);
       minimapCtx.fill();
 
-      // ボス
       if (isBossSpawned) {
         const mbx = cx + (bossMonster.group.position.x - player.position.x) * scale;
         const mbz = cy + (bossMonster.group.position.z - player.position.z) * scale;
@@ -1383,13 +1286,10 @@
         minimapCtx.fill();
       }
 
-      // プレイヤー自機（センター）
       minimapCtx.fillStyle = '#00ff88';
       minimapCtx.beginPath();
       minimapCtx.arc(cx, cy, 4.5, 0, Math.PI * 2);
       minimapCtx.fill();
-
-      minimapCtx.restore();
     }
 
     window.addEventListener('resize', () => {
