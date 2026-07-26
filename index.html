@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Streamer BGM & Chase Audio Fixed</title>
+  <title>死の市 - Stage 2 & Radar & Building Collision</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -84,19 +84,19 @@
       transition: width 0.1s linear, background-color 0.2s;
     }
 
-    /* ミニマップ */
+    /* 円形レーダーミニマップ UI */
     #minimap-container {
       position: absolute;
       bottom: 20px;
       right: 20px;
-      width: 150px;
-      height: 150px;
-      background: rgba(10, 10, 15, 0.85);
-      border: 2px solid #555;
+      width: 160px;
+      height: 160px;
+      background: rgba(5, 10, 15, 0.9);
+      border: 2px solid #00ff88;
       border-radius: 50%;
       z-index: 25;
-      display: none; /* JSでアクティブ時に表示 */
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.9), inset 0 0 10px rgba(0, 0, 0, 0.8);
+      display: none;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.9);
       overflow: hidden;
     }
 
@@ -372,6 +372,7 @@
       font-size: 15px;
       color: #eee;
       letter-spacing: 4px;
+      margin-bottom: 25px;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -383,7 +384,7 @@
 
   <div id="ui">
     <div class="hud-box">
-      <div>『死の市』からの生還</div>
+      <div id="stage-hud-title">『死の市』 ステージ 1</div>
       <div style="margin-top:4px;">鍵: <span id="key-count" style="color:#ff3333; font-weight:bold;">0 / 5</span></div>
     </div>
     <div class="hud-box">
@@ -393,9 +394,9 @@
     <div style="font-size:10px; color:#aaa; margin-top:4px;">[Esc] メニュー・設定</div>
   </div>
 
-  <!-- ミニマップ UI -->
+  <!-- 円形レーダーミニマップ UI -->
   <div id="minimap-container">
-    <canvas id="minimap-canvas" width="150" height="150"></canvas>
+    <canvas id="minimap-canvas" width="160" height="160"></canvas>
   </div>
 
   <!-- アイテムゲットチャンス UI -->
@@ -450,12 +451,12 @@
   <!-- タイトル画面 -->
   <div id="title-screen">
     <div class="game-title">死 の 市</div>
-    <div class="subtitle">- STREAMER BGM & CHANCE EDITION -</div>
+    <div class="subtitle">- MULTI-STAGE RADAR EDITION -</div>
     <button class="btn-action" id="start-btn">街 に 入 る</button>
     <div class="controls-hint">
       [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点 | [Esc] ポーズ<br>
-      【マップ】右下のレーダーで <span style="color:#00ff88">自分</span>・<span style="color:#ffcc00">鍵</span>・<span style="color:#ff0000">敵</span> の位置を確認せよ。<br>
-      【チャンス】鍵を2個集めると <span style="color:#ffcc00">アイテムゲットチャンス</span> が発生！
+      【レーダー】右下の円形ミニマップで <span style="color:#00ff88">自機</span>・<span style="color:#ffcc00">鍵</span>・<span style="color:#ff0000">敵</span> の位置を索敵せよ。<br>
+      【建物判定】すべての建物に衝突判定（壁）が追加されました。
     </div>
   </div>
 
@@ -466,11 +467,11 @@
     <button class="btn-action" id="retry-btn">タイトルへ戻る</button>
   </div>
 
-  <!-- クリア画面 -->
+  <!-- クリア画面（ステージ2進行 or ゲーム完全クリア用） -->
   <div id="clear-overlay">
-    <div class="clear-title">E S C A P E D</div>
-    <div class="clear-sub">生きてこの地獄を抜け出すことに成功した！</div>
-    <button class="btn-action" id="clear-title-btn">タイトルへ戻る</button>
+    <div class="clear-title" id="clear-title-text">E S C A P E D</div>
+    <div class="clear-sub" id="clear-sub-text">ステージ1をクリアしました！</div>
+    <button class="btn-action" id="next-stage-btn">ステージ 2 へ 進 む</button>
   </div>
 
   <div id="canvas-container"></div>
@@ -482,7 +483,6 @@
     let bgmVolume = 0.7;
     let seVolume = 0.9;
 
-    // GUI Elements
     const sensSlider = document.getElementById('sens-slider');
     const masterVolSlider = document.getElementById('master-vol');
     const bgmVolSlider = document.getElementById('bgm-vol');
@@ -551,14 +551,13 @@
         filter.connect(this.bgmNode);
         bassOsc.start();
 
-        // 敵接近時のチェイスサウンド専用ゲイン（初期値0）
         this.chaseGain = this.ctx.createGain();
         this.chaseGain.gain.setValueAtTime(0.0, now);
         this.chaseGain.connect(this.seNode);
 
         const chaseOsc = this.ctx.createOscillator();
         chaseOsc.type = 'sawtooth';
-        chaseOsc.frequency.setValueAtTime(73.42, now); // 不穏な不協和音ベース
+        chaseOsc.frequency.setValueAtTime(73.42, now);
         chaseOsc.connect(this.chaseGain);
         chaseOsc.start();
 
@@ -600,14 +599,12 @@
         this.stepCounter++;
       }
 
-      // 敵との距離に応じてチェイス音量をダイナミックに大きくする
       updateChaseVolume(distance) {
         if (!this.ctx || !this.isPlaying || !this.chaseGain) return;
-        const maxDist = 22.0; // 22m以内に入るとチェイス音楽が流れ始める
+        const maxDist = 22.0;
         let volume = 0;
         if (distance < maxDist) {
           const factor = 1 - (distance / maxDist);
-          // 近づくほど爆発的に音が大きくなる仕様 (指数関数カーブ)
           volume = Math.pow(factor, 2.0) * 1.6;
         }
         this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.05);
@@ -654,12 +651,9 @@
         });
       }
 
-      // びっくりするゲームオーバー音（ジャンプスケア演出）
       playJumpscareGameover() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        
-        // 1. 強烈な高ノイズ・クラッシュ音
         const bufferSize = this.ctx.sampleRate * 1.5;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -682,7 +676,6 @@
         filter.connect(noiseGain);
         noiseGain.connect(this.seNode);
 
-        // 2. 超低音の断末魔オシレーター
         const osc = this.ctx.createOscillator();
         const oscGain = this.ctx.createGain();
         osc.type = 'sawtooth';
@@ -701,7 +694,6 @@
         osc.stop(now + 1.5);
       }
 
-      // クリア時の爽快ファンファーレ音
       playClearFanfare() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -741,7 +733,7 @@
     const startBtn = document.getElementById('start-btn');
     const resumeBtn = document.getElementById('resume-btn');
     const retryBtn = document.getElementById('retry-btn');
-    const clearTitleBtn = document.getElementById('clear-title-btn');
+    const nextStageBtn = document.getElementById('next-stage-btn');
     const crosshair = document.getElementById('crosshair');
     const ui = document.getElementById('ui');
     const minimapContainer = document.getElementById('minimap-container');
@@ -749,10 +741,13 @@
     const minimapCtx = minimapCanvas.getContext('2d');
 
     const keyCountEl = document.getElementById('key-count');
+    const stageHudTitle = document.getElementById('stage-hud-title');
     const staminaBar = document.getElementById('stamina-bar');
     const msgLog = document.getElementById('message-log');
     const gameoverOverlay = document.getElementById('gameover-overlay');
     const clearOverlay = document.getElementById('clear-overlay');
+    const clearTitleText = document.getElementById('clear-title-text');
+    const clearSubText = document.getElementById('clear-sub-text');
 
     // 3D Scene Setup
     const scene = new THREE.Scene();
@@ -789,17 +784,21 @@
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // Building Generation
-    function generateBuildingTexture() {
+    // Building Generation with Accurate Collisions
+    const buildingColliders = [];
+    const dynamicObjectsGroup = new THREE.Group();
+    scene.add(dynamicObjectsGroup);
+
+    function generateBuildingTexture(isStage2 = false) {
       const canvas = document.createElement('canvas');
       canvas.width = 128; canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0f0f13';
+      ctx.fillStyle = isStage2 ? '#120505' : '#0f0f13';
       ctx.fillRect(0, 0, 128, 256);
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 3; c++) {
           if (Math.random() < 0.15) {
-            ctx.fillStyle = Math.random() < 0.5 ? '#e6c065' : '#5098bd';
+            ctx.fillStyle = isStage2 ? '#ff3300' : (Math.random() < 0.5 ? '#e6c065' : '#5098bd');
             ctx.fillRect(12 + c * 36, 10 + r * 28, 24, 18);
           }
         }
@@ -807,42 +806,48 @@
       return new THREE.CanvasTexture(canvas);
     }
 
-    const bldgTexture = generateBuildingTexture();
-    const buildingColliders = [];
+    const stage1Texture = generateBuildingTexture(false);
+    const stage2Texture = generateBuildingTexture(true);
 
-    function buildWideCity() {
-      const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.85 });
+    function buildCity(isStage2 = false) {
+      // Clear previous colliders & objects
+      buildingColliders.length = 0;
+      while(dynamicObjectsGroup.children.length > 0){ 
+        dynamicObjectsGroup.remove(dynamicObjectsGroup.children[0]); 
+      }
+
+      const mat = new THREE.MeshStandardMaterial({ map: isStage2 ? stage2Texture : stage1Texture, roughness: 0.85 });
+      
       for (let z = -70; z <= 50; z += 18) {
         for (let x = -45; x <= 45; x += 30) {
           if (Math.abs(x) < 8 && z > -50) continue;
-          const h = 10 + (Math.abs(x * z) % 8);
-          const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), bldgMat);
+          const h = 10 + (Math.abs(x * z) % (isStage2 ? 14 : 8));
+          const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), mat);
           const posX = x + (z % 4);
           bldg.position.set(posX, h / 2, z);
-          scene.add(bldg);
+          dynamicObjectsGroup.add(bldg);
+          
+          // 正確な当たり判定用の境界ボックスを登録
           buildingColliders.push({ minX: posX - 8, maxX: posX + 8, minZ: z - 7, maxZ: z + 7 });
         }
       }
-    }
-    buildWideCity();
 
-    function createMainSignAndDoor() {
+      // Exit Door Sign
       const canvas = document.createElement('canvas');
       canvas.width = 512; canvas.height = 256;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#040101'; ctx.fillRect(0, 0, 512, 256);
-      ctx.font = 'Bold 90px serif'; ctx.fillStyle = '#cc0000'; ctx.textAlign = 'center';
-      ctx.fillText('死 の 市', 256, 150);
+      ctx.fillStyle = isStage2 ? '#1a0000' : '#040101'; ctx.fillRect(0, 0, 512, 256);
+      ctx.font = 'Bold 90px serif'; ctx.fillStyle = isStage2 ? '#ff0055' : '#cc0000'; ctx.textAlign = 'center';
+      ctx.fillText(isStage2 ? '深 淵 の 扉' : '死 の 市', 256, 150);
 
       const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) }));
       signMesh.position.set(0, 5, -55);
-      scene.add(signMesh);
+      dynamicObjectsGroup.add(signMesh);
 
       const exitDoor = new THREE.Mesh(new THREE.BoxGeometry(3.5, 5, 0.2), new THREE.MeshStandardMaterial({ color: 0x080808 }));
       exitDoor.position.set(0, 2.5, -62);
-      scene.add(exitDoor);
+      dynamicObjectsGroup.add(exitDoor);
     }
-    createMainSignAndDoor();
 
     // Key Model
     function createKey3DModel() {
@@ -858,7 +863,7 @@
     }
 
     const keys = [];
-    const keyPositions = [
+    const keyPositionsStage1 = [
       new THREE.Vector3(-32, 0.8, 15),
       new THREE.Vector3(32, 0.8, -10),
       new THREE.Vector3(-15, 0.8, -42),
@@ -866,16 +871,25 @@
       new THREE.Vector3(-35, 0.8, -25)
     ];
 
-    function spawnKeys() {
-      keys.forEach(k => { scene.remove(k.mesh); if(k.light) scene.remove(k.light); });
+    const keyPositionsStage2 = [
+      new THREE.Vector3(-38, 0.8, 20),
+      new THREE.Vector3(38, 0.8, 5),
+      new THREE.Vector3(-25, 0.8, -50),
+      new THREE.Vector3(25, 0.8, -35),
+      new THREE.Vector3(0, 0.8, -20)
+    ];
+
+    function spawnKeys(isStage2 = false) {
+      keys.forEach(k => { dynamicObjectsGroup.remove(k.mesh); if(k.light) dynamicObjectsGroup.remove(k.light); });
       keys.length = 0;
-      keyPositions.forEach(pos => {
+      const positions = isStage2 ? keyPositionsStage2 : keyPositionsStage1;
+      positions.forEach(pos => {
         const mesh = createKey3DModel();
         mesh.position.copy(pos);
-        scene.add(mesh);
-        const pointLight = new THREE.PointLight(0xffaa00, 1.5, 5);
+        dynamicObjectsGroup.add(mesh);
+        const pointLight = new THREE.PointLight(isStage2 ? 0xff0055 : 0xffaa00, 1.5, 5);
         pointLight.position.copy(pos);
-        scene.add(pointLight);
+        dynamicObjectsGroup.add(pointLight);
         keys.push({ mesh, light: pointLight, collected: false, pos: pos.clone() });
       });
     }
@@ -925,17 +939,16 @@
     bossMonster.group.position.set(0, -100, 0);
     scene.add(bossMonster.group);
 
+    let currentStage = 1;
     let isBossSpawned = false;
     let patrolTargetX = 30;
     let patrolSpeed = 2.8;
 
-    // Game Control States
     let isPlaying = false;
     let isPaused = false;
     let isChanceTime = false;
     let chanceTriggered = false;
     let monsterFreezeTimer = 0;
-    let mapScaleBoost = 1.6;
 
     let isGameOver = false;
     let isCleared = false;
@@ -965,8 +978,8 @@
     window.selectChanceBox = function(boxIndex) {
       const rewards = [
         { text: "⚡ スタミナ永久1.5倍 ＆ 全回復！", action: () => { stamina = 150; showMessage("スタミナの上限が大幅アップ！"); } },
-        { text: "📡 ミニマップレーダー範囲拡張！", action: () => { mapScaleBoost = 0.9; showMessage("広域レーダーが有効化された！"); } },
-        { text: "❄️ 10秒間、モンスター足止め！", action: () => { monsterFreezeTimer = 10.0; showMessage("モンスターが金縛り状態になった！"); } }
+        { text: "❄️ 10秒間、モンスター足止め！", action: () => { monsterFreezeTimer = 10.0; showMessage("モンスターが金縛り状態になった！"); } },
+        { text: "💖 体力＆全ステータス強化！", action: () => { stamina = 150; showMessage("超強化状態になりました！"); } }
       ];
 
       const chosen = rewards[Math.floor(Math.random() * rewards.length)];
@@ -1007,14 +1020,20 @@
       minimapContainer.style.display = 'none';
       isPaused = false;
       isChanceTime = false;
+      currentStage = 1;
       resetGame();
     }
 
-    function resetGame() {
+    function resetGame(stageNum = 1) {
+      currentStage = stageNum;
       player.position.set(0, 1.6, 25);
       player.rotation.set(0, 0, 0);
       camera.rotation.set(0, 0, 0);
       
+      buildCity(currentStage === 2);
+      spawnKeys(currentStage === 2);
+
+      const mSpeedFactor = currentStage === 2 ? 1.35 : 1.0;
       monster1.group.position.set(0, 0, -65);
       monster2.group.position.set(-30, 0, -15);
       bossMonster.group.position.set(0, -100, 0);
@@ -1026,26 +1045,34 @@
       isCleared = false;
       chanceTriggered = false;
       monsterFreezeTimer = 0;
-      mapScaleBoost = 1.6;
 
       keysCollectedCount = 0;
       stamina = maxStamina;
       isExhausted = false;
 
-      keyCountEl.textContent = `0 / ${keyPositions.length}`;
+      stageHudTitle.textContent = currentStage === 2 ? '『深淵の暗渠』 ステージ 2' : '『死の市』 ステージ 1';
+      keyCountEl.textContent = `0 / ${keys.length}`;
       staminaBar.style.width = '100%';
       staminaBar.style.backgroundColor = '#00b359';
-
-      spawnKeys();
     }
 
     startBtn.addEventListener('click', () => {
-      resetGame();
+      resetGame(1);
       document.body.requestPointerLock();
     });
 
     retryBtn.addEventListener('click', returnToTitle);
-    clearTitleBtn.addEventListener('click', returnToTitle);
+
+    nextStageBtn.addEventListener('click', () => {
+      clearOverlay.style.display = 'none';
+      if (currentStage === 1) {
+        resetGame(2);
+        document.body.requestPointerLock();
+        audio.start();
+      } else {
+        returnToTitle();
+      }
+    });
 
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement === document.body) {
@@ -1100,7 +1127,8 @@
       }
     });
 
-    function checkBuildingCollision(newX, newZ, radius = 0.6) {
+    // プレイヤーのビル衝突判定（正確な壁当たり）
+    function checkBuildingCollision(newX, newZ, radius = 0.5) {
       for (let i = 0; i < buildingColliders.length; i++) {
         const b = buildingColliders[i];
         if (newX + radius > b.minX && newX - radius < b.maxX &&
@@ -1148,6 +1176,7 @@
       const nextX = player.position.x + moveX;
       const nextZ = player.position.z + moveZ;
 
+      // X軸・Z軸個別に判定して壁スライド移動をスムーズに実現
       if (!checkBuildingCollision(nextX, player.position.z)) {
         player.position.x = nextX;
       }
@@ -1181,8 +1210,8 @@
           k.mesh.rotation.y += delta * 2.0;
           if (player.position.distanceTo(k.pos) < 1.8) {
             k.collected = true;
-            scene.remove(k.mesh);
-            scene.remove(k.light);
+            dynamicObjectsGroup.remove(k.mesh);
+            dynamicObjectsGroup.remove(k.light);
             keysCollectedCount++;
             audio.playKeyPickup();
             keyCountEl.textContent = `${keysCollectedCount} / ${keys.length}`;
@@ -1203,10 +1232,11 @@
       });
 
       if (monsterFreezeTimer <= 0) {
+        const speedMultiplier = currentStage === 2 ? 1.3 : 1.0;
         const dist1 = monster1.group.position.distanceTo(player.position);
-        if (dist1 < 18) {
+        if (dist1 < 20) {
           monster1.group.lookAt(player.position.x, monster1.group.position.y, player.position.z);
-          monster1.group.translateZ(3.5 * delta);
+          monster1.group.translateZ(3.8 * speedMultiplier * delta);
         } else {
           monster1.group.position.x += patrolSpeed * delta;
           if (monster1.group.position.x > 35 || monster1.group.position.x < -35) {
@@ -1215,14 +1245,14 @@
         }
 
         const dist2 = monster2.group.position.distanceTo(player.position);
-        if (dist2 < 20) {
+        if (dist2 < 22) {
           monster2.group.lookAt(player.position.x, monster2.group.position.y, player.position.z);
-          monster2.group.translateZ(4.0 * delta);
+          monster2.group.translateZ(4.2 * speedMultiplier * delta);
         }
 
         if (isBossSpawned) {
-          bossMonster.group.lookAt(player.position.x, bossMonster.group.position.y, player.position.z);
-          bossMonster.group.translateZ(4.8 * delta);
+          bossMonster.group.lookAt(player.position.x, monster2.group.position.y, player.position.z);
+          bossMonster.group.translateZ(5.0 * speedMultiplier * delta);
           const distBoss = bossMonster.group.position.distanceTo(player.position);
           if (distBoss < 1.5) {
             triggerGameOver();
@@ -1256,7 +1286,7 @@
       if (isGameOver || isCleared) return;
       isGameOver = true;
       audio.stop();
-      audio.playJumpscareGameover(); // びっくりするジャンプスケア音
+      audio.playJumpscareGameover();
       document.exitPointerLock();
       crosshair.style.display = 'none';
       ui.style.display = 'none';
@@ -1268,41 +1298,66 @@
       if (isGameOver || isCleared) return;
       isCleared = true;
       audio.stop();
-      audio.playClearFanfare(); // クリア時の爽快ファンファーレ音
+      audio.playClearFanfare();
       document.exitPointerLock();
       crosshair.style.display = 'none';
       ui.style.display = 'none';
       minimapContainer.style.display = 'none';
+
+      if (currentStage === 1) {
+        clearTitleText.textContent = "STAGE 1 CLEAR";
+        clearSubText.textContent = "おめでとうございます！ステージ2へ進みます。";
+        nextStageBtn.textContent = "ステージ 2 へ 進 む";
+      } else {
+        clearTitleText.textContent = "ALL CLEARED!";
+        clearSubText.textContent = "すべての地獄から完全に生還しました！お見事です！";
+        nextStageBtn.textContent = "タイトルへ戻る";
+      }
       clearOverlay.style.display = 'flex';
     }
 
-    // ミニマップ描画ループ
+    // 正確な円形レーダーの描画ループ
     function drawMinimap() {
       requestAnimationFrame(drawMinimap);
       if (!isPlaying || isPaused || isChanceTime) return;
 
-      minimapCtx.clearRect(0, 0, 150, 150);
+      const size = 160;
+      minimapCtx.clearRect(0, 0, size, size);
 
-      minimapCtx.fillStyle = 'rgba(10, 10, 15, 0.9)';
-      minimapCtx.fillRect(0, 0, 150, 150);
+      // レーダー背景と円形クリッピング
+      minimapCtx.save();
+      minimapCtx.beginPath();
+      minimapCtx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      minimapCtx.clip();
 
-      const cx = 75;
-      const cy = 75;
-      const scale = mapScaleBoost * 2.5;
+      minimapCtx.fillStyle = 'rgba(5, 15, 10, 0.85)';
+      minimapCtx.fillRect(0, 0, size, size);
 
+      // レーダーの同心円グリッド線
+      minimapCtx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+      minimapCtx.lineWidth = 1;
+      minimapCtx.beginPath();
+      minimapCtx.arc(size / 2, size / 2, 40, 0, Math.PI * 2);
+      minimapCtx.arc(size / 2, size / 2, 70, 0, Math.PI * 2);
+      minimapCtx.stroke();
+
+      const cx = size / 2;
+      const cy = size / 2;
+      const scale = 2.4; // 索敵スケール
+
+      // 鍵の位置をレーダーに表示
       keys.forEach(k => {
         if (!k.collected) {
           const rx = cx + (k.pos.x - player.position.x) * scale;
           const rz = cy + (k.pos.z - player.position.z) * scale;
-          if (rx >= 0 && rx <= 150 && rz >= 0 && rz <= 150) {
-            minimapCtx.fillStyle = '#ffcc00';
-            minimapCtx.beginPath();
-            minimapCtx.arc(rx, rz, 3.5, 0, Math.PI * 2);
-            minimapCtx.fill();
-          }
+          minimapCtx.fillStyle = '#ffcc00';
+          minimapCtx.beginPath();
+          minimapCtx.arc(rx, rz, 3.5, 0, Math.PI * 2);
+          minimapCtx.fill();
         }
       });
 
+      // 敵1
       const m1x = cx + (monster1.group.position.x - player.position.x) * scale;
       const m1z = cy + (monster1.group.position.z - player.position.z) * scale;
       minimapCtx.fillStyle = '#ff0000';
@@ -1310,6 +1365,7 @@
       minimapCtx.arc(m1x, m1z, 4, 0, Math.PI * 2);
       minimapCtx.fill();
 
+      // 敵2
       const m2x = cx + (monster2.group.position.x - player.position.x) * scale;
       const m2z = cy + (monster2.group.position.z - player.position.z) * scale;
       minimapCtx.fillStyle = '#ff00bb';
@@ -1317,6 +1373,7 @@
       minimapCtx.arc(m2x, m2z, 4, 0, Math.PI * 2);
       minimapCtx.fill();
 
+      // ボス
       if (isBossSpawned) {
         const mbx = cx + (bossMonster.group.position.x - player.position.x) * scale;
         const mbz = cy + (bossMonster.group.position.z - player.position.z) * scale;
@@ -1326,10 +1383,13 @@
         minimapCtx.fill();
       }
 
+      // プレイヤー自機（センター）
       minimapCtx.fillStyle = '#00ff88';
       minimapCtx.beginPath();
       minimapCtx.arc(cx, cy, 4.5, 0, Math.PI * 2);
       minimapCtx.fill();
+
+      minimapCtx.restore();
     }
 
     window.addEventListener('resize', () => {
