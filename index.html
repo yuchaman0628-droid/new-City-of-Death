@@ -3,1303 +3,983 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>死の市 - Chance Time & Horror Edition</title>
+  <title>死の市 - Torii Escape Edition (Updated v6)</title>
   <style>
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 0;
+    html, body {
+      width: 100%; height: 100%;
+      margin: 0; padding: 0;
       overflow: hidden;
-      background-color: #000;
+      background-color: #050202;
       font-family: 'Courier New', Courier, serif, monospace;
       user-select: none;
     }
 
-    #canvas-container {
-      width: 100vw;
-      height: 100vh;
-      display: block;
-    }
+    #canvas-container { width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
 
-    /* レトロVHS・走査線効果 */
     #vhs-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none;
-      background: repeating-linear-gradient(
-        0deg,
-        rgba(0, 0, 0, 0.25),
-        rgba(0, 0, 0, 0.25) 1px,
-        transparent 1px,
-        transparent 2px
-      );
-      box-shadow: inset 0 0 160px rgba(0,0,0,0.95);
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+      box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
       z-index: 10;
     }
 
-    #flash-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(255, 0, 0, 0.85);
-      pointer-events: none;
-      z-index: 15;
-      opacity: 0;
-      transition: opacity 0.08s ease;
+    #jumpscare-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle, rgba(180,0,0,0.95) 0%, rgba(0,0,0,1) 80%);
+      display: none; justify-content: center; align-items: center;
+      flex-direction: column; z-index: 60;
+    }
+    .jumpscare-face {
+      font-size: 180px; text-shadow: 0 0 60px #f00, 0 0 120px #ff0000;
+      animation: scareZoom 0.08s infinite alternate;
+    }
+    @keyframes scareZoom {
+      0% { transform: scale(1) rotate(-8deg); }
+      100% { transform: scale(1.45) rotate(8deg); }
     }
 
     #crosshair {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 4px; height: 4px;
-      background-color: rgba(255, 255, 255, 0.5);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 20;
-      pointer-events: none;
-      display: none;
+      position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+      background-color: rgba(255, 255, 255, 0.8); border-radius: 50%;
+      transform: translate(-50%, -50%); z-index: 20; display: none; pointer-events: none;
     }
 
     #ui {
-      position: absolute;
-      top: 20px; left: 20px;
-      color: #ddd;
-      z-index: 20;
-      font-size: 13px;
-      letter-spacing: 2px;
-      display: none;
-      pointer-events: none;
+      position: absolute; top: 20px; left: 20px; color: #ddd;
+      z-index: 20; font-size: 12px; letter-spacing: 2px; display: none; pointer-events: none;
     }
 
     .hud-box {
-      background: rgba(0, 0, 0, 0.8);
-      padding: 10px 14px;
-      border: 1px solid #444;
-      border-left: 4px solid #b30000;
-      margin-bottom: 8px;
+      background: rgba(0, 0, 0, 0.85); padding: 10px 14px;
+      border: 1px solid #444; border-left: 4px solid #b30000; margin-bottom: 8px;
     }
 
-    #stamina-bar-bg {
-      width: 150px;
-      height: 8px;
-      background: #222;
-      border: 1px solid #555;
-      margin-top: 6px;
+    .bar-bg { width: 140px; height: 6px; background: #222; border: 1px solid #555; margin-top: 4px; }
+    .bar-fill { width: 100%; height: 100%; transition: width 0.1s linear; }
+    #stamina-bar { background: #00b359; }
+    #battery-bar { background: #0088ff; }
+
+    #interact-prompt {
+      position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
+      color: #ffcc00; font-size: 16px; font-weight: bold; letter-spacing: 2px;
+      background: rgba(0, 0, 0, 0.8); padding: 6px 16px; border: 1px solid #ffcc00;
+      border-radius: 4px; display: none; z-index: 20; pointer-events: none;
     }
 
-    #stamina-bar {
-      width: 100%;
-      height: 100%;
-      background: #00b359;
-      transition: width 0.1s linear, background-color 0.2s;
-    }
-
-    /* ミニマップ */
     #minimap-container {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      width: 150px;
-      height: 150px;
-      background: rgba(10, 10, 15, 0.85);
-      border: 2px solid #555;
-      border-radius: 50%;
-      z-index: 25;
-      display: none;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.9), inset 0 0 10px rgba(0, 0, 0, 0.8);
-      overflow: hidden;
+      position: absolute; bottom: 20px; right: 20px; width: 160px; height: 160px;
+      background: rgba(5, 5, 10, 0.9); border: 2px solid #666; border-radius: 50%;
+      z-index: 25; display: none; box-shadow: 0 0 20px rgba(0,0,0,0.9); overflow: hidden;
     }
+    #minimap-canvas { width: 100%; height: 100%; }
 
-    #minimap-canvas {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* アイテムゲットチャンス画面 */
     #chance-screen {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(5, 2, 10, 0.92);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 45;
-      color: #fff;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(5, 2, 10, 0.95); display: none; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 45; color: #fff;
     }
-
-    .chance-title {
-      font-size: 42px;
-      color: #ffcc00;
-      letter-spacing: 8px;
-      margin-bottom: 10px;
-      text-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
-      animation: chanceGlow 1.5s infinite alternate;
-    }
-
-    @keyframes chanceGlow {
-      0% { text-shadow: 0 0 10px #ffcc00; }
-      100% { text-shadow: 0 0 35px #ffff00, 0 0 10px #fff; }
-    }
-
-    .chance-sub {
-      font-size: 14px;
-      color: #bbb;
-      margin-bottom: 40px;
-      letter-spacing: 3px;
-    }
-
-    .box-container {
-      display: flex;
-      gap: 30px;
-    }
-
+    .chance-title { font-size: 36px; color: #ffcc00; letter-spacing: 6px; margin-bottom: 10px; text-shadow: 0 0 20px #ffcc00; }
+    .box-container { display: flex; gap: 20px; }
     .chest-card {
-      width: 160px;
-      height: 220px;
-      background: radial-gradient(circle, #2a2015 0%, #110b05 100%);
-      border: 2px solid #aa8833;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      width: 120px; height: 160px; background: radial-gradient(circle, #2a2015 0%, #110b05 100%);
+      border: 2px solid #aa8833; border-radius: 8px; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s;
     }
+    .chest-card:hover { transform: translateY(-8px) scale(1.05); border-color: #ffdd66; box-shadow: 0 0 20px #ffcc00; }
 
-    .chest-card:hover {
-      transform: translateY(-10px) scale(1.05);
-      border-color: #ffdd66;
-      box-shadow: 0 0 25px rgba(255, 204, 0, 0.6);
+    #pause-menu, #title-screen, #gameover-overlay, #clear-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; justify-content: center; align-items: center; color: #eee;
     }
-
-    .chest-icon {
-      font-size: 54px;
-      margin-bottom: 15px;
-    }
-
-    .chest-label {
-      font-size: 16px;
-      color: #ffdd66;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-
-    #chance-result {
-      margin-top: 35px;
-      font-size: 20px;
-      color: #00ff88;
-      letter-spacing: 3px;
-      min-height: 30px;
-      text-shadow: 0 0 10px #00ff88;
-    }
-
-    /* ポーズ画面 */
-    #pause-menu {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 40;
-      color: #eee;
-    }
-
-    .menu-title {
-      font-size: 42px;
-      color: #cc0000;
-      letter-spacing: 8px;
-      margin-bottom: 25px;
-      text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
-    }
-
-    .setting-group {
-      background: rgba(20, 20, 20, 0.9);
-      border: 1px solid #444;
-      padding: 20px 30px;
-      border-radius: 4px;
-      width: 320px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .setting-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-    }
-
-    .setting-item input[type=range] {
-      width: 130px;
-      cursor: pointer;
-    }
-
-    #message-log {
-      position: absolute;
-      bottom: 40px;
-      width: 100%;
-      text-align: center;
-      color: #ff2222;
-      font-size: 20px;
-      font-weight: bold;
-      letter-spacing: 3px;
-      z-index: 20;
-      pointer-events: none;
-      text-shadow: 0 0 10px #000, 0 0 20px #f00;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-    }
+    #pause-menu { background: rgba(0, 0, 0, 0.9); z-index: 40; display: none; }
+    #title-screen { background: radial-gradient(circle, rgba(40, 2, 2, 0.98) 0%, rgba(0,0,0,1) 100%); z-index: 30; }
+    #gameover-overlay { background-color: rgba(30, 0, 0, 0.98); display: none; z-index: 50; }
+    #clear-overlay { background-color: rgba(0, 20, 10, 0.95); display: none; z-index: 50; }
 
     .btn-action {
-      background: transparent;
-      border: 1px solid #666;
-      color: #ddd;
-      padding: 12px 36px;
-      font-size: 16px;
-      font-family: inherit;
-      letter-spacing: 4px;
-      cursor: pointer;
-      transition: all 0.3s ease;
+      background: transparent; border: 1px solid #666; color: #ddd;
+      padding: 12px 36px; font-size: 16px; font-family: inherit; letter-spacing: 3px; cursor: pointer; transition: all 0.3s; margin-top: 15px;
     }
+    .btn-action:hover { background: #800000; color: #fff; border-color: #f00; box-shadow: 0 0 15px #f00; }
 
-    .btn-action:hover {
-      background: #800000;
-      color: #fff;
-      border-color: #f00;
-      box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-    }
+    .diff-selector { display: flex; gap: 15px; margin: 15px 0; }
+    .diff-btn { background: #222; border: 1px solid #555; color: #aaa; padding: 6px 16px; cursor: pointer; font-size: 12px; }
+    .diff-btn.active { border-color: #ffcc00; color: #ffcc00; font-weight: bold; background: #332a00; }
 
-    #title-screen {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: radial-gradient(circle, rgba(25, 2, 2, 0.96) 0%, rgba(0,0,0,0.99) 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 30;
-      color: #eee;
-    }
-
-    .game-title {
-      font-size: 76px;
-      color: #b30000;
-      letter-spacing: 16px;
-      margin-bottom: 5px;
-      text-shadow: 0 0 25px rgba(255, 0, 0, 0.8), 4px 4px 0px #000;
-      animation: pulse 2.5s infinite alternate;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 0.75; text-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
-      100% { opacity: 1; text-shadow: 0 0 40px rgba(255, 0, 0, 1), 0 0 10px rgba(255,255,255,0.8); }
-    }
-
-    .subtitle {
-      font-size: 13px;
-      color: #777;
-      letter-spacing: 6px;
-      margin-bottom: 10px;
-    }
-
-    .controls-hint {
-      margin-top: 25px;
-      font-size: 11px;
-      color: #888;
-      letter-spacing: 1px;
-      line-height: 1.8;
-      text-align: center;
-    }
-
-    #gameover-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(30, 0, 0, 0.98);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 50;
-      animation: goFlash 0.1s infinite alternate;
-    }
-
-    @keyframes goFlash {
-      0% { background-color: rgba(70, 0, 0, 0.98); }
-      100% { background-color: rgba(5, 0, 0, 0.99); }
-    }
-
-    .go-title {
-      font-size: 84px;
-      color: #ff0000;
-      font-weight: bold;
-      letter-spacing: 16px;
-      text-shadow: 0 0 20px #000, 0 0 50px #f00;
-      margin-bottom: 15px;
-    }
-
-    .go-sub {
-      font-size: 16px;
-      color: #ccc;
-      letter-spacing: 4px;
-      margin-bottom: 30px;
-      text-shadow: 0 0 5px #000;
-    }
-
-    #clear-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 20, 10, 0.95);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 50;
-    }
-
-    .clear-title {
-      font-size: 64px;
-      color: #00ff88;
-      font-weight: bold;
-      letter-spacing: 12px;
-      text-shadow: 0 0 25px rgba(0, 255, 136, 0.8);
-      margin-bottom: 20px;
-    }
-
-    .clear-sub {
-      font-size: 15px;
-      color: #eee;
-      letter-spacing: 4px;
+    #message-log {
+      position: absolute; bottom: 40px; width: 100%; text-align: center;
+      color: #ff3333; font-size: 18px; font-weight: bold; letter-spacing: 2px;
+      z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.4s;
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 </head>
 <body>
 
   <div id="vhs-overlay"></div>
-  <div id="flash-overlay"></div>
   <div id="crosshair"></div>
+  <div id="interact-prompt">[E] アイテムを拾う</div>
+
+  <div id="jumpscare-overlay">
+    <div class="jumpscare-face">💀</div>
+    <div style="color:#ff0000; font-size:24px; font-weight:bold; letter-spacing:6px; margin-top:20px;">捕 獲</div>
+  </div>
 
   <div id="ui">
     <div class="hud-box">
-      <div>『死の市』からの生還</div>
-      <div style="margin-top:4px;">鍵: <span id="key-count" style="color:#ff3333; font-weight:bold;">0 / 5</span></div>
+      <div>『死の市』中央鳥居 [BLOOD MOON v6]</div>
+      <div style="margin-top:2px;">鍵: <span id="key-count" style="color:#ffcc00; font-weight:bold;">0 / 5</span></div>
+      <div>爆竹 [F]: <span id="firecracker-count" style="color:#ff3333; font-weight:bold;">0</span> 個</div>
+      <div>TIME: <span id="timer-display">00:00</span></div>
     </div>
     <div class="hud-box">
       <div>STAMINA</div>
-      <div id="stamina-bar-bg"><div id="stamina-bar"></div></div>
+      <div class="bar-bg"><div id="stamina-bar" class="bar-fill"></div></div>
+      <div style="margin-top:4px;">BATTERY</div>
+      <div class="bar-bg"><div id="battery-bar" class="bar-fill"></div></div>
     </div>
-    <div style="font-size:10px; color:#aaa; margin-top:4px;">[Esc] メニュー・設定</div>
+    <div id="crouch-status" style="font-size:10px; color:#aaa;">[Ctrl/C] しゃがみ隠れる | [E] 調べる | [Esc] ポーズ</div>
   </div>
 
-  <!-- ミニマップ UI -->
-  <div id="minimap-container">
-    <canvas id="minimap-canvas" width="150" height="150"></canvas>
-  </div>
+  <div id="minimap-container"><canvas id="minimap-canvas" width="160" height="160"></canvas></div>
 
-  <!-- アイテムゲットチャンス UI -->
   <div id="chance-screen">
     <div class="chance-title">✨ CHANCE TIME ✨</div>
-    <div class="chance-sub">宝箱を1つ選んで特殊効果を獲得せよ！</div>
-
+    <div style="margin-bottom:20px; color:#aaa;">運命の宝箱を選べ...</div>
     <div class="box-container">
-      <div class="chest-card" onclick="selectChanceBox(0)">
-        <div class="chest-icon">🎁</div>
-        <div class="chest-label">宝箱 壱</div>
-      </div>
-      <div class="chest-card" onclick="selectChanceBox(1)">
-        <div class="chest-icon">🎁</div>
-        <div class="chest-label">宝箱 弐</div>
-      </div>
-      <div class="chest-card" onclick="selectChanceBox(2)">
-        <div class="chest-icon">🎁</div>
-        <div class="chest-label">宝箱 参</div>
-      </div>
+      <div class="chest-card" onclick="selectChanceBox(0)"><div style="font-size:40px;">🎁</div><div>壱</div></div>
+      <div class="chest-card" onclick="selectChanceBox(1)"><div style="font-size:40px;">🎁</div><div>弐</div></div>
+      <div class="chest-card" onclick="selectChanceBox(2)"><div style="font-size:40px;">🎁</div><div>参</div></div>
     </div>
-
-    <div id="chance-result"></div>
+    <div id="chance-result" style="margin-top:25px; font-size:18px; color:#00ff88; min-height:25px;"></div>
   </div>
 
-  <!-- ポーズ画面 -->
   <div id="pause-menu">
-    <div class="menu-title">P A U S E D</div>
-    <div class="setting-group">
-      <div class="setting-item">
-        <label for="sens-slider">視点感度:</label>
-        <input type="range" id="sens-slider" min="1" max="20" value="4">
-      </div>
-      <div class="setting-item">
-        <label for="master-vol">主音量:</label>
-        <input type="range" id="master-vol" min="0" max="100" value="80">
-      </div>
-      <div class="setting-item">
-        <label for="bgm-vol">BGM音量:</label>
-        <input type="range" id="bgm-vol" min="0" max="100" value="70">
-      </div>
-      <div class="setting-item">
-        <label for="se-vol">心音・警告音:</label>
-        <input type="range" id="se-vol" min="0" max="100" value="90">
-      </div>
-    </div>
-    <button class="btn-action" id="resume-btn">再 開 す る</button>
+    <div style="font-size:36px; color:#cc0000; margin-bottom:20px;">PAUSED</div>
+    <button class="btn-action" id="resume-btn">再 開</button>
   </div>
 
   <div id="message-log"></div>
 
-  <!-- タイトル画面 -->
   <div id="title-screen">
-    <div class="game-title">死 の 市</div>
-    <div class="subtitle">- CHANCE TIME EDITION -</div>
+    <div style="font-size:64px; color:#b30000; font-weight:bold; letter-spacing:10px;">死 の 市</div>
+    <div style="font-size:12px; color:#888; letter-spacing:4px; margin-bottom:15px;">- BLOOD MOON EDITION -</div>
+    
+    <div class="diff-selector">
+      <button class="diff-btn" onclick="setDifficulty('easy', this)">EASY</button>
+      <button class="diff-btn active" onclick="setDifficulty('normal', this)">NORMAL</button>
+      <button class="diff-btn" onclick="setDifficulty('hard', this)">HARD</button>
+    </div>
+
     <button class="btn-action" id="start-btn">街 に 入 る</button>
-    <div class="controls-hint">
-      [W/A/S/D] 移動 | [Shift] ダッシュ | [マウス] 視点 | [Esc] ポーズ<br>
-      【マップ】右下のレーダーで <span style="color:#00ff88">自分</span>・<span style="color:#ffcc00">鍵</span>・<span style="color:#ff0000">敵</span> の位置を確認せよ。<br>
-      【チャンス】鍵を2個集めると <span style="color:#ffcc00">アイテムゲットチャンス</span> が発生！
+    <div style="font-size:11px; color:#777; margin-top:20px; line-height:1.6; text-align:center;">
+      [W/A/S/D] 移動 | [Shift] ダッシュ | [Ctrl/C] しゃがみ隠れる<br>
+      [E] アイテム取得 | [F] 爆竹使用（怪物麻痺）<br>
+      赤い月の下、金色の『鍵』を5つ集め、**マップ中央の鳥居**へ向かえ！
     </div>
   </div>
 
-  <!-- ゲームオーバー画面 -->
   <div id="gameover-overlay">
-    <div class="go-title">S L A U G H T E R</div>
-    <div class="go-sub">肉体を切り刻まれ、あなたの魂は闇に呑まれた...</div>
-    <button class="btn-action" id="retry-btn">タイトルへ戻る</button>
+    <div style="font-size:72px; color:#f00; font-weight:bold;">S L A U G H T E R</div>
+    <div style="color:#ccc; margin-bottom:20px;">あなたの魂は闇に囚われた...</div>
+    <button class="btn-action" onclick="returnToTitle()">タイトルへ戻る</button>
   </div>
 
-  <!-- クリア画面 -->
   <div id="clear-overlay">
-    <div class="clear-title">E S C A P E D</div>
-    <div class="clear-sub">生きてこの地獄を抜け出すことに成功した！</div>
-    <button class="btn-action" id="clear-title-btn">タイトルへ戻る</button>
+    <div style="font-size:54px; color:#00ff88; font-weight:bold;">E S C A P E D</div>
+    <div style="margin:10px 0; color:#eee;">赤い月の夜、現世へ生還した！</div>
+    <div style="font-size:20px; color:#ffcc00;" id="clear-rank">RANK: S</div>
+    <div style="font-size:14px; color:#aaa; margin-bottom:20px;" id="clear-time-text">TIME: 00:00</div>
+    <button class="btn-action" onclick="returnToTitle()">タイトルへ戻る</button>
   </div>
 
   <div id="canvas-container"></div>
 
   <script>
-    // 設定変数
-    let mouseSensitivity = 0.00064;
-    let masterVolume = 0.8;
-    let bgmVolume = 0.7;
-    let seVolume = 0.9;
-
-    // GUI Elements
-    const sensSlider = document.getElementById('sens-slider');
-    const masterVolSlider = document.getElementById('master-vol');
-    const bgmVolSlider = document.getElementById('bgm-vol');
-    const seVolSlider = document.getElementById('se-vol');
-
-    sensSlider.addEventListener('input', (e) => { mouseSensitivity = e.target.value * 0.00016; });
-    masterVolSlider.addEventListener('input', (e) => { masterVolume = e.target.value / 100; audio.updateVolumes(); });
-    bgmVolSlider.addEventListener('input', (e) => { bgmVolume = e.target.value / 100; audio.updateVolumes(); });
-    seVolSlider.addEventListener('input', (e) => { seVolume = e.target.value / 100; audio.updateVolumes(); });
-
-    // Audio Engine
-    class HorrorMusicEngine {
-      constructor() {
-        this.ctx = null;
-        this.isPlaying = false;
-        this.masterNode = null;
-        this.bgmNode = null;
-        this.seNode = null;
-        this.chaseGain = null;
-        this.musicInterval = null;
-        this.notes = [130.81, 155.56, 174.61, 185.00, 196.00, 246.94, 261.63, 311.13];
-      }
-
-      init() {
-        if (this.ctx) return;
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.ctx = new AudioContext();
-
-        this.masterNode = this.ctx.createGain();
-        this.bgmNode = this.ctx.createGain();
-        this.seNode = this.ctx.createGain();
-
-        this.bgmNode.connect(this.masterNode);
-        this.seNode.connect(this.masterNode);
-        this.masterNode.connect(this.ctx.destination);
-
-        this.updateVolumes();
-      }
-
-      updateVolumes() {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        this.masterNode.gain.setValueAtTime(masterVolume, now);
-        this.bgmNode.gain.setValueAtTime(bgmVolume, now);
-        this.seNode.gain.setValueAtTime(seVolume, now);
-      }
-
-      start() {
-        this.init();
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-        if (this.isPlaying) return;
-        this.isPlaying = true;
-
-        const now = this.ctx.currentTime;
-
-        const bassOsc = this.ctx.createOscillator();
-        bassOsc.type = 'sine';
-        bassOsc.frequency.setValueAtTime(65.41, now);
-
-        const bassFilter = this.ctx.createBiquadFilter();
-        bassFilter.type = 'lowpass';
-        bassFilter.frequency.setValueAtTime(200, now);
-
-        bassOsc.connect(bassFilter);
-        bassFilter.connect(this.bgmNode);
-        bassOsc.start();
-
-        this.chaseGain = this.ctx.createGain();
-        this.chaseGain.gain.setValueAtTime(0.0, now);
-        this.chaseGain.connect(this.seNode);
-
-        const chaseOsc = this.ctx.createOscillator();
-        chaseOsc.type = 'triangle';
-        chaseOsc.frequency.setValueAtTime(50.0, now);
-
-        chaseOsc.connect(this.chaseGain);
-        chaseOsc.start();
-
-        this.startMelodySequence();
-      }
-
-      startMelodySequence() {
-        const step = () => {
-          if (!this.isPlaying) return;
-          this.playPianoNote();
-          const nextTime = Math.random() * 800 + 400;
-          this.musicInterval = setTimeout(step, nextTime);
-        };
-        step();
-      }
-
-      playPianoNote() {
-        if (!this.ctx || !this.isPlaying) return;
-        const now = this.ctx.currentTime;
-
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'triangle';
-        const freq = this.notes[Math.floor(Math.random() * this.notes.length)];
-        osc.frequency.setValueAtTime(freq, now);
-
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
-
-        osc.connect(gain);
-        gain.connect(this.bgmNode);
-
-        osc.start(now);
-        osc.stop(now + 2.0);
-      }
-
-      updateChaseVolume(distance) {
-        if (!this.ctx || !this.isPlaying || !this.chaseGain) return;
-        const maxDist = 32.0;
-        let volume = 0;
-        if (distance < maxDist) {
-          const factor = 1 - (distance / maxDist);
-          volume = Math.pow(factor, 1.2) * 0.8;
-        }
-        this.chaseGain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.05);
-      }
-
-      playHeartbeat(volumeRatio = 1.0) {
-        if (!this.ctx || !this.isPlaying) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(80, now);
-        osc.frequency.exponentialRampToValueAtTime(15, now + 0.16);
-
-        gain.gain.setValueAtTime(0.85 * volumeRatio, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-
-        osc.connect(gain);
-        gain.connect(this.seNode);
-
-        osc.start(now);
-        osc.stop(now + 0.16);
-      }
-
-      playKeyPickup() {
+    // --- 音声エンジン ---
+    class HorrorAudio {
+      constructor() { this.ctx = null; }
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      playHeartbeat() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now);
-        osc.frequency.setValueAtTime(783.99, now + 0.1);
-
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-
-        osc.connect(gain);
-        gain.connect(this.seNode);
-
-        osc.start(now);
-        osc.stop(now + 0.4);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(55, now);
+        osc.frequency.exponentialRampToValueAtTime(10, now + 0.18);
+        gain.gain.setValueAtTime(0.9, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.18);
       }
-
-      playGameoverSound() {
+      playSE(freq, duration, type='sine') {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(180, now);
-        osc.frequency.exponentialRampToValueAtTime(20, now + 1.5);
-
-        gain.gain.setValueAtTime(0.7, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-
-        osc.connect(gain);
-        gain.connect(this.seNode);
-
-        osc.start(now);
-        osc.stop(now + 1.5);
-      }
-
-      stop() {
-        if (!this.isPlaying) return;
-        this.isPlaying = false;
-        if (this.musicInterval) clearTimeout(this.musicInterval);
+        osc.type = type; osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + duration);
       }
     }
+    const audio = new HorrorAudio();
 
-    const audio = new HorrorMusicEngine();
+    // --- 難易度設定 ---
+    let difficulty = 'normal';
+    let diffParams = { speedMult: 1.0, detectMult: 1.0 };
 
-    // DOM Elements
+    function setDifficulty(diff, btn) {
+      difficulty = diff;
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (diff === 'easy') diffParams = { speedMult: 0.75, detectMult: 0.7 };
+      if (diff === 'normal') diffParams = { speedMult: 1.0, detectMult: 1.0 };
+      if (diff === 'hard') diffParams = { speedMult: 1.35, detectMult: 1.4 };
+    }
+
+    let mouseSensitivity = 0.002;
+    let playTime = 0;
+    let timerInterval = null;
+
+    // --- 3D 空間視界・夜空・赤い月の設定 ---
     const container = document.getElementById('canvas-container');
-    const titleScreen = document.getElementById('title-screen');
-    const pauseMenu = document.getElementById('pause-menu');
-    const chanceScreen = document.getElementById('chance-screen');
-    const chanceResultEl = document.getElementById('chance-result');
-    const startBtn = document.getElementById('start-btn');
-    const resumeBtn = document.getElementById('resume-btn');
-    const retryBtn = document.getElementById('retry-btn');
-    const clearTitleBtn = document.getElementById('clear-title-btn');
-    const crosshair = document.getElementById('crosshair');
-    const ui = document.getElementById('ui');
-    const minimapContainer = document.getElementById('minimap-container');
-    const minimapCanvas = document.getElementById('minimap-canvas');
-    const minimapCtx = minimapCanvas.getContext('2d');
-
-    const keyCountEl = document.getElementById('key-count');
-    const staminaBar = document.getElementById('stamina-bar');
-    const msgLog = document.getElementById('message-log');
-    const gameoverOverlay = document.getElementById('gameover-overlay');
-    const clearOverlay = document.getElementById('clear-overlay');
-    const flashOverlay = document.getElementById('flash-overlay');
-
-    // 3D Scene Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x010103);
-    scene.fog = new THREE.FogExp2(0x010103, 0.045);
+    // 夜空の背景色（漆黒に少し青みがかった闇）
+    scene.background = new THREE.Color(0x040608);
+    // 霧も夜の闇に同化させる
+    scene.fog = new THREE.FogExp2(0x040608, 0.020);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
     camera.rotation.order = 'YXZ';
 
     const player = new THREE.Object3D();
-    player.position.set(0, 1.6, 25);
+    player.position.set(0, 1.6, 1);
     player.add(camera);
     scene.add(player);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
+    renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0x1a2030, 0.6);
+    // 夜間の環境光（少し青暗い光）
+    const ambientLight = new THREE.AmbientLight(0x111622, 0.6);
     scene.add(ambientLight);
 
-    const flashlight = new THREE.SpotLight(0xfff0d0, 4.5, 25, Math.PI / 4.2, 0.4, 1);
+    // --- 赤い月（ブラッドムーン）の作成 ---
+    const moonGroup = new THREE.Group();
+    // 月本体（発光する赤色のメッシュ）
+    const moonGeo = new THREE.SphereGeometry(8, 32, 32);
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xff2222 });
+    const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+    moonGroup.add(moonMesh);
+
+    // 月からの赤い光（周囲を妖しく照らす）
+    const redMoonLight = new THREE.DirectionalLight(0xff3333, 0.6);
+    redMoonLight.position.set(40, 70, -60);
+    scene.add(redMoonLight);
+
+    // 月の配置（空の遠くに固定）
+    moonGroup.position.set(40, 70, -60);
+    scene.add(moonGroup);
+
+    // 懐中電灯
+    const flashlight = new THREE.SpotLight(0xfff5e0, 4.5, 35, Math.PI / 4, 0.3, 1);
     camera.add(flashlight);
     flashlight.position.set(0, 0, 0);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // Floor
+    // --- リアルなアスファルト道路テクスチャの生成 ---
+    function createAsphaltTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#181b20';
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      for (let i = 0; i < 40000; i++) {
+        const x = Math.random() * 1024;
+        const y = Math.random() * 1024;
+        const shade = Math.floor(Math.random() * 35) + 12;
+        ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade})`;
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
+
+      ctx.strokeStyle = 'rgba(8, 10, 12, 0.5)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 15; i++) {
+        ctx.beginPath();
+        let cx = Math.random() * 1024, cy = Math.random() * 1024;
+        ctx.moveTo(cx, cy);
+        for (let j = 0; j < 4; j++) {
+          cx += (Math.random() - 0.5) * 150;
+          cy += (Math.random() - 0.5) * 150;
+          ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#252a33';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(32, 32, 960, 960);
+
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 8;
+      ctx.setLineDash([30, 20]);
+      ctx.beginPath(); ctx.moveTo(512, 64); ctx.lineTo(512, 960); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(64, 512); ctx.lineTo(960, 512); ctx.stroke();
+      ctx.setLineDash([]);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(8, 8);
+      return texture;
+    }
+
+    const asphaltTex = createAsphaltTexture();
     const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(180, 160),
-      new THREE.MeshStandardMaterial({ color: 0x0d0d12, roughness: 0.95 })
+      new THREE.PlaneGeometry(200, 200),
+      new THREE.MeshStandardMaterial({ 
+        map: asphaltTex, 
+        roughness: 0.85,
+        metalness: 0.05
+      })
     );
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // Building Generation
-    function generateBuildingTexture() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 128; canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0f0f13';
-      ctx.fillRect(0, 0, 128, 256);
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 3; c++) {
-          if (Math.random() < 0.15) {
-            ctx.fillStyle = Math.random() < 0.5 ? '#e6c065' : '#5098bd';
-            ctx.fillRect(12 + c * 36, 10 + r * 28, 24, 18);
-          }
-        }
-      }
-      return new THREE.CanvasTexture(canvas);
-    }
+    const MAP_LIMIT = { minX: -60, maxX: 60, minZ: -65, maxZ: 45 };
 
-    const bldgTexture = generateBuildingTexture();
-    const buildingColliders = [];
-
-    function buildWideCity() {
-      const bldgMat = new THREE.MeshStandardMaterial({ map: bldgTexture, roughness: 0.85 });
-      for (let z = -70; z <= 50; z += 18) {
-        for (let x = -45; x <= 45; x += 30) {
-          if (Math.abs(x) < 8 && z > -50) continue;
-          const h = 10 + (Math.abs(x * z) % 8);
-          const bldg = new THREE.Mesh(new THREE.BoxGeometry(16, h, 14), bldgMat);
-          const posX = x + (z % 4);
-          bldg.position.set(posX, h / 2, z);
-          scene.add(bldg);
-          buildingColliders.push({ minX: posX - 8, maxX: posX + 8, minZ: z - 7, maxZ: z + 7 });
-        }
-      }
-    }
-    buildWideCity();
-
-    function createMainSignAndDoor() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512; canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#040101'; ctx.fillRect(0, 0, 512, 256);
-      ctx.font = 'Bold 90px serif'; ctx.fillStyle = '#cc0000'; ctx.textAlign = 'center';
-      ctx.fillText('死 の 市', 256, 150);
-
-      const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) }));
-      signMesh.position.set(0, 5, -55);
-      scene.add(signMesh);
-
-      const exitDoor = new THREE.Mesh(new THREE.BoxGeometry(3.5, 5, 0.2), new THREE.MeshStandardMaterial({ color: 0x080808 }));
-      exitDoor.position.set(0, 2.5, -62);
-      scene.add(exitDoor);
-    }
-    createMainSignAndDoor();
-
-    // Key Model
-    function createKey3DModel() {
+    // --- 鳥居（中央ゴール）の生成 ---
+    const toriiPosition = new THREE.Vector3(0, 0, -5);
+    function createTorii() {
       const group = new THREE.Group();
-      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.85, emissive: 0x554400 });
-      const head = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.04, 8, 16), goldMat);
-      head.position.y = 0.4;
-      group.add(head);
-      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 8), goldMat);
-      shaft.position.y = 0.15;
+      const woodMat = new THREE.MeshStandardMaterial({ color: 0x881111, roughness: 0.6 });
+      const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+
+      const pillarGeo = new THREE.CylinderGeometry(0.3, 0.35, 5, 12);
+      const pillarL = new THREE.Mesh(pillarGeo, woodMat);
+      pillarL.position.set(-2, 2.5, 0);
+      group.add(pillarL);
+
+      const pillarR = new THREE.Mesh(pillarGeo, woodMat);
+      pillarR.position.set(2, 2.5, 0);
+      group.add(pillarR);
+
+      const kasagiGeo = new THREE.BoxGeometry(5.2, 0.4, 0.6);
+      const kasagi = new THREE.Mesh(kasagiGeo, woodMat);
+      kasagi.position.set(0, 4.8, 0);
+      group.add(kasagi);
+
+      const shimagiGeo = new THREE.BoxGeometry(4.6, 0.3, 0.5);
+      const shimagi = new THREE.Mesh(shimagiGeo, blackMat);
+      shimagi.position.set(0, 4.3, 0);
+      group.add(shimagi);
+
+      const nukiGeo = new THREE.BoxGeometry(4.6, 0.25, 0.4);
+      const nuki = new THREE.Mesh(nukiGeo, woodMat);
+      nuki.position.set(0, 3.2, 0);
+      group.add(nuki);
+
+      const toriiLight = new THREE.PointLight(0xff3300, 2.0, 10);
+      toriiLight.position.set(0, 3, 1);
+      group.add(toriiLight);
+
+      group.position.copy(toriiPosition);
+      scene.add(group);
+    }
+    createTorii();
+
+    // --- 街並み・建物生成 ---
+    const buildingColliders = [];
+    const buildingRenderData = [];
+
+    function buildCity() {
+      const bldgMat = new THREE.MeshStandardMaterial({ color: 0x121418, roughness: 0.8 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x08090c, roughness: 0.95 });
+      const windowMat = new THREE.MeshBasicMaterial({ color: 0x2e2310 });
+
+      for (let z = -60; z <= 35; z += 18) {
+        for (let x = -40; x <= 40; x += 22) {
+          if (Math.abs(x) < 8 && Math.abs(z) < 12) continue;
+
+          const w = 12, d = 12, h = 8 + Math.random() * 6;
+          const bldg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bldgMat);
+          bldg.position.set(x, h/2, z);
+          scene.add(bldg);
+
+          const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 0.4, d + 0.6), roofMat);
+          roof.position.set(x, h + 0.2, z);
+          scene.add(roof);
+
+          for (let wy = 2; wy < h - 1; wy += 2.5) {
+            for (let wx = -w/2 + 2; wx <= w/2 - 2; wx += 3) {
+              if (Math.random() > 0.6) {
+                const win = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.4), windowMat);
+                win.position.set(x + wx, wy, z + d/2 + 0.05);
+                scene.add(win);
+              }
+            }
+          }
+
+          buildingColliders.push({ minX: x - w/2 - 0.6, maxX: x + w/2 + 0.6, minZ: z - d/2 - 0.6, maxZ: z + d/2 + 0.6 });
+          buildingRenderData.push({ x, z, w, d });
+        }
+      }
+
+      const ruinMat = new THREE.MeshStandardMaterial({ color: 0x0a0c10, roughness: 0.9 });
+      const outerRuins = [
+        {x: -75, z: -70, w: 25, d: 25, h: 30},
+        {x: 75, z: -70, w: 30, d: 20, h: 35},
+        {x: -75, z: 20, w: 20, d: 30, h: 25},
+        {x: 75, z: 20, w: 25, d: 25, h: 28},
+        {x: 0, z: -80, w: 40, d: 15, h: 32},
+        {x: 0, z: 60, w: 45, d: 20, h: 26}
+      ];
+      outerRuins.forEach(r => {
+        const ruinBldg = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, r.d), ruinMat);
+        ruinBldg.position.set(r.x, r.h / 2, r.z);
+        scene.add(ruinBldg);
+      });
+    }
+    buildCity();
+
+    // --- 鍵モデル ---
+    function createKeyMesh() {
+      const group = new THREE.Group();
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.8, roughness: 0.2 });
+
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 8, 16), goldMat);
+      ring.position.y = 0.35;
+      group.add(ring);
+
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5), goldMat);
+      shaft.position.y = 0.1;
       group.add(shaft);
+
+      const bit = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.04), goldMat);
+      bit.position.set(0.06, -0.05, 0);
+      group.add(bit);
+
+      group.rotation.x = Math.PI / 4;
       return group;
     }
 
     const keys = [];
     const keyPositions = [
-      new THREE.Vector3(-32, 0.8, 15),
-      new THREE.Vector3(32, 0.8, -10),
-      new THREE.Vector3(-15, 0.8, -42),
-      new THREE.Vector3(35, 0.8, 28),
-      new THREE.Vector3(-35, 0.8, -25)
+      new THREE.Vector3(0, 0.3, -48),
+      new THREE.Vector3(-11, 0.3, -25),
+      new THREE.Vector3(11, 0.3, -25),
+      new THREE.Vector3(-11, 0.3, 2),
+      new THREE.Vector3(11, 0.3, 2)
     ];
 
-    function spawnKeys() {
-      keys.forEach(k => { scene.remove(k.mesh); if(k.light) scene.remove(k.light); });
+    const batteries = [];
+    const firecrackerItems = [];
+
+    // --- アイテム生成 ---
+    function spawnItems() {
+      keys.forEach(k => scene.remove(k.mesh));
       keys.length = 0;
       keyPositions.forEach(pos => {
-        const mesh = createKey3DModel();
+        const mesh = createKeyMesh();
         mesh.position.copy(pos);
         scene.add(mesh);
-        const pointLight = new THREE.PointLight(0xffaa00, 1.5, 5);
-        pointLight.position.copy(pos);
-        scene.add(pointLight);
-        keys.push({ mesh, light: pointLight, collected: false, pos: pos.clone() });
+        keys.push({ mesh, pos, collected: false });
+      });
+
+      function createBatteryMesh() {
+        const group = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.32, 16), bodyMat);
+        body.position.y = 0.16;
+        group.add(body);
+
+        const capMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 12), capMat);
+        cap.position.y = 0.33;
+        group.add(cap);
+
+        const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.6, roughness: 0.4 });
+        const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.102, 0.102, 0.1, 16), stripeMat);
+        stripe.position.y = 0.22;
+        group.add(stripe);
+
+        group.rotation.z = Math.PI / 2;
+        return group;
+      }
+
+      batteries.forEach(b => scene.remove(b.mesh));
+      batteries.length = 0;
+      const batPositions = [
+        new THREE.Vector3(0, 0.1, -12),
+        new THREE.Vector3(-11, 0.1, -12),
+        new THREE.Vector3(11, 0.1, 18),
+        new THREE.Vector3(0, 0.1, 26)
+      ];
+      batPositions.forEach(pos => {
+        const mesh = createBatteryMesh();
+        mesh.position.copy(pos); scene.add(mesh);
+        batteries.push({ mesh, pos, collected: false });
+      });
+
+      function createFirecrackerMesh() {
+        const group = new THREE.Group();
+        const redMat = new THREE.MeshStandardMaterial({ color: 0xcc1111, roughness: 0.5 });
+        const fuseMat = new THREE.MeshBasicMaterial({ color: 0xddccaa });
+        const bandMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+
+        const offsets = [{x: -0.06, z: -0.04}, {x: 0.06, z: -0.04}, {x: 0, z: 0.06}];
+        offsets.forEach(off => {
+          const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.28, 12), redMat);
+          stick.position.set(off.x, 0.14, off.z);
+          group.add(stick);
+
+          const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.1, 8), fuseMat);
+          fuse.position.set(off.x, 0.31, off.z);
+          fuse.rotation.z = (Math.random() - 0.5) * 0.4;
+          group.add(fuse);
+        });
+
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 12), bandMat);
+        band.position.y = 0.14;
+        group.add(band);
+
+        return group;
+      }
+
+      firecrackerItems.forEach(fc => scene.remove(fc.mesh));
+      firecrackerItems.length = 0;
+      const fcPositions = [
+        new THREE.Vector3(0, 0.1, -38),
+        new THREE.Vector3(-11, 0.1, -38),
+        new THREE.Vector3(11, 0.1, -38),
+        new THREE.Vector3(0, 0.1, 12)
+      ];
+      fcPositions.forEach(pos => {
+        const mesh = createFirecrackerMesh();
+        mesh.position.copy(pos); scene.add(mesh);
+        firecrackerItems.push({ mesh, pos, collected: false });
       });
     }
 
-    // Glowing Monsters
-    function createGlowingMonster(glowColorHex = 0xff0000, isBoss = false) {
+    // --- モンスター生成 ---
+    function createScaryMonster() {
       const group = new THREE.Group();
-      const scale = isBoss ? 1.6 : 1.0;
 
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x050508, roughness: 0.5 });
-      const body = new THREE.Mesh(new THREE.ConeGeometry(0.25 * scale, 3.8 * scale, 5), bodyMat);
-      body.rotation.x = Math.PI;
-      body.position.y = 1.9 * scale;
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.9 });
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.1, 3.8, 8), bodyMat);
+      body.position.y = 1.9;
       group.add(body);
 
-      const glowMat = new THREE.MeshBasicMaterial({ color: glowColorHex });
-      const core = new THREE.Mesh(new THREE.SphereGeometry(0.2 * scale, 8, 8), glowMat);
-      core.position.y = 2.0 * scale;
-      group.add(core);
-
-      const head = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35 * scale), bodyMat);
-      head.position.y = 3.6 * scale;
+      const headMat = new THREE.MeshBasicMaterial({ color: 0x110000 });
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), headMat);
+      head.position.y = 3.7;
+      head.scale.set(0.8, 1.3, 0.8);
       group.add(head);
 
-      for (let i = 0; i < (isBoss ? 8 : 4); i++) {
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06 * scale, 6, 6), glowMat);
-        eye.position.set((Math.random() - 0.5) * 0.35 * scale, (3.5 + (Math.random() - 0.5) * 0.3) * scale, -0.3 * scale);
-        group.add(eye);
-      }
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.08), eyeMat);
+      eyeL.position.set(-0.15, 3.8, 0.3);
+      const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.08), eyeMat);
+      eyeR.position.set(0.15, 3.8, 0.3);
+      group.add(eyeL); group.add(eyeR);
 
-      const monsterLight = new THREE.PointLight(glowColorHex, isBoss ? 4.0 : 2.5, isBoss ? 12 : 7);
-      monsterLight.position.set(0, 2.5 * scale, 0);
+      const monsterLight = new THREE.PointLight(0xff0000, 1.5, 6);
+      monsterLight.position.set(0, 3.5, 0);
       group.add(monsterLight);
 
-      return { group, head, body, light: monsterLight, isBoss };
+      scene.add(group);
+      return { group, pos: group.position, isStunned: false, stunTimer: 0 };
     }
 
-    const monster1 = createGlowingMonster(0xff0000);
-    monster1.group.position.set(0, 0, -65);
-    scene.add(monster1.group);
+    const monsters = [ createScaryMonster(), createScaryMonster() ];
 
-    const monster2 = createGlowingMonster(0xff00bb);
-    monster2.group.position.set(-30, 0, -15);
-    scene.add(monster2.group);
+    // ゲーム変数
+    let isPlaying = false, isPaused = false, isChanceTime = false;
+    let stamina = 100, battery = 100, firecrackers = 0;
+    let isCrouching = false, isSprinting = false;
+    let keysCount = 0;
+    let revealEnemiesTimer = 0;
+    let nearbyItemAction = null;
 
-    const bossMonster = createGlowingMonster(0xff0000, true);
-    bossMonster.group.position.set(0, -100, 0);
-    scene.add(bossMonster.group);
+    let moveF = false, moveB = false, moveL = false, moveR = false;
 
-    let isBossSpawned = false;
-    let patrolTargetX = 30;
-    let patrolSpeed = 2.8;
-
-    // Game Control States
-    let isPlaying = false;
-    let isPaused = false;
-    let isChanceTime = false;
-    let chanceTriggered = false;
-    let monsterFreezeTimer = 0;
-    let mapScaleBoost = 1.6;
-
-    let isChasing = false;
-    let isGameOver = false;
-    let isCleared = false;
-
-    let keysCollectedCount = 0;
-    let stamina = 100;
-    const maxStamina = 100;
-    let isExhausted = false;
-
-    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-    let isSprinting = false;
-    let heartbeatTimer = 0;
-
-    let isJumpingOver = false;
-    let jumpTime = 0;
-
-    function showMessage(msg) {
-      msgLog.textContent = msg;
-      msgLog.style.opacity = '1';
-      setTimeout(() => { msgLog.style.opacity = '0'; }, 3000);
-    }
-
-    // チャンスタイム関連機能
-    function startChanceTime() {
+    // チャンスタイム
+    function triggerChanceTime() {
       isChanceTime = true;
       document.exitPointerLock();
-      chanceResultEl.textContent = '';
-      chanceScreen.style.display = 'flex';
+      document.getElementById('chance-result').textContent = '';
+      document.getElementById('chance-screen').style.display = 'flex';
     }
 
-    window.selectChanceBox = function(boxIndex) {
-      const rewards = [
-        { text: "⚡ スタミナ永久1.5倍 ＆ 全回復！", action: () => { stamina = 150; showMessage("スタミナの上限が大幅アップ！"); } },
-        { text: "📡 ミニマップレーダー範囲拡張！", action: () => { mapScaleBoost = 0.9; showMessage("広域レーダーが有効化された！"); } },
-        { text: "❄️ 10秒間、モンスター足止め！", action: () => { monsterFreezeTimer = 10.0; showMessage("モンスターが金縛り状態になった！"); } }
+    window.selectChanceBox = function(idx) {
+      const options = [
+        { text: "🎆 爆竹を2個獲得！", act: () => { firecrackers += 2; updateUI(); } },
+        { text: "📡 敵の位置を10秒間可視化！", act: () => { revealEnemiesTimer = 10.0; } },
+        { text: "🔋 バッテリー全回復！", act: () => { battery = 100; } },
+        { text: "⚠️ ハズレ！モンスターが至近距離に！", act: () => { monsters[0].pos.set(player.position.x + 5, 0, player.position.z + 5); } }
       ];
-
-      const chosen = rewards[Math.floor(Math.random() * rewards.length)];
-      chanceResultEl.textContent = chosen.text;
-      chosen.action();
-
+      const res = options[Math.floor(Math.random() * options.length)];
+      document.getElementById('chance-result').textContent = res.text;
+      res.act();
       setTimeout(() => {
-        chanceScreen.style.display = 'none';
+        document.getElementById('chance-screen').style.display = 'none';
         isChanceTime = false;
         document.body.requestPointerLock();
-      }, 1800);
+      }, 1500);
     };
 
-    function togglePause() {
-      if (!isPlaying || isGameOver || isCleared || isChanceTime) return;
+    function showMsg(txt) {
+      const log = document.getElementById('message-log');
+      log.textContent = txt; log.style.opacity = '1';
+      setTimeout(() => { log.style.opacity = '0'; }, 2500);
+    }
 
-      if (isPaused) {
-        isPaused = false;
-        pauseMenu.style.display = 'none';
-        document.body.requestPointerLock();
-      } else {
-        isPaused = true;
-        pauseMenu.style.display = 'flex';
-        document.exitPointerLock();
+    function updateUI() {
+      document.getElementById('key-count').textContent = `${keysCount} / ${keyPositions.length}`;
+      document.getElementById('firecracker-count').textContent = firecrackers;
+      document.getElementById('stamina-bar').style.width = `${stamina}%`;
+      document.getElementById('battery-bar').style.width = `${battery}%`;
+    }
+
+    // キーボード操作
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyW') moveF = true;
+      if (e.code === 'KeyS') moveB = true;
+      if (e.code === 'KeyA') moveL = true;
+      if (e.code === 'KeyD') moveR = true;
+      if (e.code === 'ShiftLeft') isSprinting = true;
+      if (e.code === 'ControlLeft' || e.code === 'KeyC') {
+        isCrouching = !isCrouching;
+        player.position.y = isCrouching ? 0.8 : 1.6;
       }
-    }
-
-    resumeBtn.addEventListener('click', togglePause);
-
-    function returnToTitle() {
-      gameoverOverlay.style.display = 'none';
-      clearOverlay.style.display = 'none';
-      pauseMenu.style.display = 'none';
-      chanceScreen.style.display = 'none';
-      titleScreen.style.display = 'flex';
-      crosshair.style.display = 'none';
-      ui.style.display = 'none';
-      minimapContainer.style.display = 'none';
-      isPaused = false;
-      isChanceTime = false;
-      resetGame();
-    }
-
-    function resetGame() {
-      player.position.set(0, 1.6, 25);
-      player.rotation.set(0, 0, 0);
-      camera.rotation.set(0, 0, 0);
-      
-      monster1.group.position.set(0, 0, -65);
-      monster2.group.position.set(-30, 0, -15);
-      bossMonster.group.position.set(0, -100, 0);
-
-      isBossSpawned = false;
-      patrolTargetX = 30;
-
-      isChasing = false;
-      isGameOver = false;
-      isCleared = false;
-      isJumpingOver = false;
-      chanceTriggered = false;
-      monsterFreezeTimer = 0;
-      mapScaleBoost = 1.6;
-
-      keysCollectedCount = 0;
-      stamina = maxStamina;
-      isExhausted = false;
-
-      keyCountEl.textContent = `0 / ${keyPositions.length}`;
-      staminaBar.style.width = '100%';
-      staminaBar.style.backgroundColor = '#00b359';
-
-      spawnKeys();
-    }
-
-    startBtn.addEventListener('click', () => {
-      resetGame();
-      document.body.requestPointerLock();
+      if (e.code === 'KeyE') {
+        if (nearbyItemAction) {
+          nearbyItemAction();
+          nearbyItemAction = null;
+          document.getElementById('interact-prompt').style.display = 'none';
+        }
+      }
+      if (e.code === 'KeyF') {
+        if (firecrackers > 0) {
+          firecrackers--;
+          updateUI();
+          showMsg("爆竹を使用！爆音で怪物たちが麻痺！");
+          audio.playSE(900, 0.5, 'sawtooth');
+          monsters.forEach(m => { m.isStunned = true; m.stunTimer = 6.0; });
+        } else {
+          showMsg("爆竹を持っていません！");
+        }
+      }
+      if (e.code === 'Escape') togglePause();
     });
 
-    retryBtn.addEventListener('click', returnToTitle);
-    clearTitleBtn.addEventListener('click', returnToTitle);
-
-    document.addEventListener('pointerlockchange', () => {
-      if (document.pointerLockElement === document.body) {
-        if (!isPaused && !isChanceTime) {
-          isPlaying = true;
-          titleScreen.style.display = 'none';
-          crosshair.style.display = 'block';
-          ui.style.display = 'block';
-          minimapContainer.style.display = 'block';
-          audio.start();
-        }
-      } else {
-        if (isPlaying && !isGameOver && !isCleared && !isPaused && !isChanceTime) {
-          togglePause();
-        }
-      }
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'KeyW') moveF = false;
+      if (e.code === 'KeyS') moveB = false;
+      if (e.code === 'KeyA') moveL = false;
+      if (e.code === 'KeyD') moveR = false;
+      if (e.code === 'ShiftLeft') isSprinting = false;
     });
 
     document.addEventListener('mousemove', (e) => {
-      if (!isPlaying || isPaused || isChanceTime || isGameOver || isCleared) return;
+      if (!isPlaying || isPaused || isChanceTime) return;
       player.rotation.y -= e.movementX * mouseSensitivity;
       camera.rotation.x -= e.movementY * mouseSensitivity;
       camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
     });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.code === 'Escape') {
-        togglePause();
-        return;
-      }
+    function togglePause() {
+      if (!isPlaying || isChanceTime) return;
+      isPaused = !isPaused;
+      document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none';
+      if (isPaused) document.exitPointerLock(); else document.body.requestPointerLock();
+    }
+    document.getElementById('resume-btn').onclick = togglePause;
 
-      if (isGameOver || isPaused || isChanceTime) return;
+    function startGame() {
+      isPlaying = true; isPaused = false; keysCount = 0; stamina = 100; battery = 100; playTime = 0; firecrackers = 0;
+      player.position.set(0, 1.6, 1);
+      player.rotation.y = 0;
+      camera.rotation.x = 0;
 
-      switch (e.code) {
-        case 'KeyW': moveForward = true; break;
-        case 'KeyS': moveBackward = true; break;
-        case 'KeyA': moveLeft = true; break;
-        case 'KeyD': moveRight = true; break;
-        case 'ShiftLeft':
-        case 'ShiftRight': isSprinting = true; break;
-      }
-    });
+      monsters[0].pos.set(-15, 0, -35);
+      monsters[1].pos.set(15, 0, -40);
+      spawnItems(); updateUI();
+      document.getElementById('title-screen').style.display = 'none';
+      document.getElementById('ui').style.display = 'block';
+      document.getElementById('minimap-container').style.display = 'block';
+      document.getElementById('crosshair').style.display = 'block';
+      audio.init();
+      document.body.requestPointerLock();
 
-    document.addEventListener('keyup', (e) => {
-      switch (e.code) {
-        case 'KeyW': moveForward = false; break;
-        case 'KeyS': moveBackward = false; break;
-        case 'KeyA': moveLeft = false; break;
-        case 'KeyD': moveRight = false; break;
-        case 'ShiftLeft':
-        case 'ShiftRight': isSprinting = false; break;
-      }
-    });
-
-    function checkBuildingCollision(newX, newZ, radius = 0.6) {
-      for (let i = 0; i < buildingColliders.length; i++) {
-        const b = buildingColliders[i];
-        if (newX + radius > b.minX && newX - radius < b.maxX &&
-            newZ + radius > b.minZ && newZ - radius < b.maxZ) {
-          return true;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (isPlaying && !isPaused && !isChanceTime) {
+          playTime++;
+          const m = String(Math.floor(playTime / 60)).padStart(2, '0');
+          const s = String(playTime % 60).padStart(2, '0');
+          document.getElementById('timer-display').textContent = `${m}:${s}`;
         }
-      }
-      return false;
+      }, 1000);
+    }
+    document.getElementById('start-btn').onclick = startGame;
+
+    function returnToTitle() {
+      isPlaying = false;
+      document.getElementById('gameover-overlay').style.display = 'none';
+      document.getElementById('clear-overlay').style.display = 'none';
+      document.getElementById('jumpscare-overlay').style.display = 'none';
+      document.getElementById('title-screen').style.display = 'flex';
+      document.getElementById('ui').style.display = 'none';
+      document.getElementById('minimap-container').style.display = 'none';
+      document.getElementById('crosshair').style.display = 'none';
+      document.getElementById('interact-prompt').style.display = 'none';
     }
 
-    const clock = new THREE.Clock();
+    function triggerJumpscare() {
+      isPlaying = false;
+      document.exitPointerLock();
+      document.getElementById('interact-prompt').style.display = 'none';
+      document.getElementById('jumpscare-overlay').style.display = 'flex';
+      audio.playSE(80, 1.5, 'sawtooth');
+      setTimeout(() => {
+        document.getElementById('jumpscare-overlay').style.display = 'none';
+        document.getElementById('gameover-overlay').style.display = 'flex';
+      }, 1300);
+    }
+
+    function checkWin() {
+      const distToTorii = player.position.distanceTo(toriiPosition);
+      if (distToTorii < 2.5) {
+        if (keysCount >= keyPositions.length) {
+          isPlaying = false;
+          document.exitPointerLock();
+          document.getElementById('interact-prompt').style.display = 'none';
+          let rank = 'S';
+          if (playTime > 90) rank = 'A';
+          if (playTime > 150) rank = 'B';
+          document.getElementById('clear-rank').textContent = `RANK: ${rank}`;
+          document.getElementById('clear-time-text').textContent = `TIME: ${document.getElementById('timer-display').textContent}`;
+          document.getElementById('clear-overlay').style.display = 'flex';
+        } else {
+          showMsg(`鍵があと ${keyPositions.length - keysCount} 個足りない！`);
+        }
+      }
+    }
+
+    let lastTime = performance.now();
 
     function animate() {
       requestAnimationFrame(animate);
+      const now = performance.now();
+      const delta = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
 
-      if (!isPlaying || isPaused || isChanceTime || isGameOver || isCleared) {
-        if (!isPlaying) renderer.render(scene, camera);
-        return;
+      keys.forEach(k => {
+        if (!k.collected) k.mesh.rotation.y += delta * 2.0;
+      });
+
+      renderer.render(scene, camera);
+
+      if (!isPlaying || isPaused || isChanceTime) return;
+
+      if (battery > 0) {
+        battery -= delta * 0.8;
+        flashlight.intensity = (battery / 100) * 4.5;
+      } else {
+        flashlight.intensity = 0.15;
       }
 
-      const delta = Math.min(clock.getDelta(), 0.1);
-
-      if (monsterFreezeTimer > 0) {
-        monsterFreezeTimer -= delta;
+      let speed = 4.8;
+      if (isCrouching) speed = 2.2;
+      else if (isSprinting && stamina > 0 && (moveF||moveB||moveL||moveR)) {
+        speed = 8.5; stamina -= delta * 25;
+      } else if (stamina < 100) {
+        stamina += delta * 15;
       }
 
-      const speed = isSprinting && !isExhausted ? 7.5 : 4.0;
-      const actualSpeed = speed * delta;
+      const moveDir = new THREE.Vector3();
+      if (moveF) moveDir.z -= 1; if (moveB) moveDir.z += 1;
+      if (moveL) moveDir.x -= 1; if (moveR) moveDir.x += 1;
+      moveDir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y);
 
-      const dir = new THREE.Vector3();
-      camera.getWorldDirection(dir);
-      dir.y = 0;
-      dir.normalize();
+      const nextX = player.position.x + moveDir.x * speed * delta;
+      const nextZ = player.position.z + moveDir.z * speed * delta;
 
-      const sideDir = new THREE.Vector3(-dir.z, 0, dir.x);
+      let collide = false;
+      for (let b of buildingColliders) {
+        if (nextX > b.minX && nextX < b.maxX && nextZ > b.minZ && nextZ < b.maxZ) {
+          collide = true; break;
+        }
+      }
+      if (nextX < MAP_LIMIT.minX || nextX > MAP_LIMIT.maxX || nextZ < MAP_LIMIT.minZ || nextZ > MAP_LIMIT.maxZ) {
+        collide = true;
+      }
 
-      let moveX = 0;
-      let moveZ = 0;
-
-      if (moveForward) { moveX += dir.x * actualSpeed; moveZ += dir.z * actualSpeed; }
-      if (moveBackward) { moveX -= dir.x * actualSpeed; moveZ -= dir.z * actualSpeed; }
-      if (moveRight) { moveX += sideDir.x * actualSpeed; moveZ += sideDir.z * actualSpeed; }
-      if (moveLeft) { moveX -= sideDir.x * actualSpeed; moveZ -= sideDir.z * actualSpeed; }
-
-      const nextX = player.position.x + moveX;
-      const nextZ = player.position.z + moveZ;
-
-      if (!checkBuildingCollision(nextX, player.position.z)) {
+      if (!collide) {
         player.position.x = nextX;
-      }
-      if (!checkBuildingCollision(player.position.x, nextZ)) {
         player.position.z = nextZ;
       }
 
-      if (isSprinting && (moveForward || moveBackward || moveLeft || moveRight)) {
-        stamina -= 25 * delta;
-        if (stamina <= 0) {
-          stamina = 0;
-          isExhausted = true;
-          showMessage("スタミナが切れました...");
+      nearbyItemAction = null;
+      let promptText = "";
+
+      keys.forEach(k => {
+        if (!k.collected && player.position.distanceTo(k.pos) < 2.2) {
+          promptText = "[E] 鍵を拾う";
+          nearbyItemAction = () => {
+            k.collected = true; scene.remove(k.mesh); keysCount++;
+            showMsg("黄金の鍵を獲得した！"); audio.playSE(650, 0.3);
+            if (keysCount === 2) triggerChanceTime();
+            updateUI();
+          };
         }
+      });
+
+      if (!nearbyItemAction) {
+        batteries.forEach(b => {
+          if (!b.collected && player.position.distanceTo(b.pos) < 2.0) {
+            promptText = "[E] 乾電池を拾う";
+            nearbyItemAction = () => {
+              b.collected = true; scene.remove(b.mesh); battery = Math.min(100, battery + 50);
+              showMsg("乾電池を獲得！ライト回復！"); audio.playSE(450, 0.2); updateUI();
+            };
+          }
+        });
+      }
+
+      if (!nearbyItemAction) {
+        firecrackerItems.forEach(fc => {
+          if (!fc.collected && player.position.distanceTo(fc.pos) < 2.0) {
+            promptText = "[E] 爆竹を拾う";
+            nearbyItemAction = () => {
+              fc.collected = true; scene.remove(fc.mesh); firecrackers++;
+              showMsg("爆竹を拾った！ [F]キーで投擲"); audio.playSE(750, 0.2); updateUI();
+            };
+          }
+        });
+      }
+
+      const promptEl = document.getElementById('interact-prompt');
+      if (nearbyItemAction) {
+        promptEl.textContent = promptText;
+        promptEl.style.display = 'block';
+      } else if (player.position.distanceTo(toriiPosition) < 3.0) {
+        promptEl.textContent = keysCount >= 5 ? "[E] 鳥居をくぐり脱出する" : `[!] 鳥居（鍵あと ${5 - keysCount} 個）`;
+        promptEl.style.display = 'block';
       } else {
-        stamina += 15 * delta;
-        const currentMaxStamina = stamina > 100 ? 150 : 100;
-        if (stamina >= currentMaxStamina) {
-          stamina = currentMaxStamina;
-          isExhausted = false;
-        }
+        promptEl.style.display = 'none';
       }
 
-      const currentMaxStaminaForBar = stamina > 100 ? 150 : 100;
-      const staminaRatio = stamina / currentMaxStaminaForBar;
-      staminaBar.style.width = `${staminaRatio * 100}%`;
-      staminaBar.style.backgroundColor = isExhausted ? '#ff3333' : '#00b359';
+      if (revealEnemiesTimer > 0) revealEnemiesTimer -= delta;
+
+      monsters.forEach(m => {
+        if (m.isStunned) {
+          m.stunTimer -= delta;
+          if (m.stunTimer <= 0) m.isStunned = false;
+          return;
+        }
+
+        const dist = m.pos.distanceTo(player.position);
+        let detectDist = (20 * diffParams.detectMult) * (isCrouching ? 0.35 : 1.0);
+
+        if (dist < detectDist) {
+          const dir = new THREE.Vector3().subVectors(player.position, m.pos).normalize();
+          const monsterSpeed = 4.1 * diffParams.speedMult;
+          const nextMx = m.pos.x + dir.x * monsterSpeed * delta;
+          const mz = m.pos.z;
+          
+          let mCollideX = false;
+          for (let b of buildingColliders) {
+            if (nextMx > b.minX && nextMx < b.maxX && mz > b.minZ && mz < b.maxZ) { mCollideX = true; break; }
+          }
+          if (!mCollideX) m.pos.x = nextMx;
+
+          const mx = m.pos.x;
+          const nextMz = m.pos.z + dir.z * monsterSpeed * delta;
+          
+          let mCollideZ = false;
+          for (let b of buildingColliders) {
+            if (mx > b.minX && mx < b.maxX && nextMz > b.minZ && nextMz < b.maxZ) { mCollideZ = true; break; }
+          }
+          if (!mCollideZ) m.pos.z = nextMz;
+
+          m.group.rotation.y = Math.atan2(dir.x, dir.z);
+          m.group.position.y = Math.sin(now * 0.005) * 0.2;
+
+          if (dist < 12) audio.playHeartbeat();
+        }
+
+        if (dist < 1.6) triggerJumpscare();
+      });
+
+      checkWin();
+      updateMinimap();
+      updateUI();
+    }
+
+    const miniCanvas = document.getElementById('minimap-canvas');
+    const miniCtx = miniCanvas.getContext('2d');
+
+    function updateMinimap() {
+      miniCtx.clearRect(0, 0, 160, 160);
+      const cx = 80, cy = 80, scale = 1.3;
+
+      miniCtx.fillStyle = '#1c1f28';
+      buildingRenderData.forEach(b => {
+        const dx = (b.x - player.position.x) * scale;
+        const dz = (b.z - player.position.z) * scale;
+        const w = b.w * scale, d = b.d * scale;
+        miniCtx.fillRect(cx + dx - w/2, cy + dz - d/2, w, d);
+      });
+
+      const toriiDx = (toriiPosition.x - player.position.x) * scale;
+      const toriiDz = (toriiPosition.z - player.position.z) * scale;
+      miniCtx.fillStyle = '#ff3300';
+      miniCtx.fillRect(cx + toriiDx - 4, cy + toriiDz - 2, 8, 4);
 
       keys.forEach(k => {
         if (!k.collected) {
-          k.mesh.rotation.y += delta * 2.0;
-          if (player.position.distanceTo(k.pos) < 1.8) {
-            k.collected = true;
-            scene.remove(k.mesh);
-            scene.remove(k.light);
-            keysCollectedCount++;
-            audio.playKeyPickup();
-            keyCountEl.textContent = `${keysCollectedCount} / ${keys.length}`;
-            showMessage(`鍵を獲得しました！ (${keysCollectedCount}/${keys.length})`);
-
-            if (keysCollectedCount === 2 && !chanceTriggered) {
-              chanceTriggered = true;
-              startChanceTime();
-            }
-
-            if (keysCollectedCount === keys.length) {
-              isBossSpawned = true;
-              bossMonster.group.position.set(0, 0, -50);
-              showMessage("すべての鍵が揃った！脱出扉へ向かえ！！");
-            }
+          const dx = (k.pos.x - player.position.x) * scale;
+          const dz = (k.pos.z - player.position.z) * scale;
+          if (Math.abs(dx) < 80 && Math.abs(dz) < 80) {
+            miniCtx.fillStyle = '#ffcc00';
+            miniCtx.beginPath(); miniCtx.arc(cx + dx, cy + dz, 3, 0, Math.PI * 2); miniCtx.fill();
           }
         }
       });
 
-      if (monsterFreezeTimer <= 0) {
-        const dist1 = monster1.group.position.distanceTo(player.position);
-        if (dist1 < 18) {
-          monster1.group.lookAt(player.position.x, monster1.group.position.y, player.position.z);
-          monster1.group.translateZ(3.5 * delta);
-        } else {
-          monster1.group.position.x += patrolSpeed * delta;
-          if (monster1.group.position.x > 35 || monster1.group.position.x < -35) {
-            patrolSpeed *= -1;
-          }
-        }
-
-        const dist2 = monster2.group.position.distanceTo(player.position);
-        if (dist2 < 20) {
-          monster2.group.lookAt(player.position.x, monster2.group.position.y, player.position.z);
-          monster2.group.translateZ(4.0 * delta);
-        }
-
-        if (isBossSpawned) {
-          bossMonster.group.lookAt(player.position.x, bossMonster.group.position.y, player.position.z);
-          bossMonster.group.translateZ(4.8 * delta);
-          const distBoss = bossMonster.group.position.distanceTo(player.position);
-          if (distBoss < 1.5) {
-            triggerGameOver();
-          }
-        }
-
-        if (dist1 < 1.4 || dist2 < 1.4) {
-          triggerGameOver();
-        }
-
-        const minDist = Math.min(dist1, dist2, isBossSpawned ? bossMonster.group.position.distanceTo(player.position) : 999);
-        audio.updateChaseVolume(minDist);
-
-        if (minDist < 12) {
-          heartbeatTimer += delta * (14 - minDist) * 0.4;
-          if (heartbeatTimer > 0.8) {
-            audio.playHeartbeat(Math.max(0.3, 1 - minDist / 12));
-            heartbeatTimer = 0;
-          }
-        }
-      }
-
-      if (keysCollectedCount === keys.length && player.position.distanceTo(new THREE.Vector3(0, 1.6, -60)) < 2.5) {
-        triggerClear();
-      }
-
-      renderer.render(scene, camera);
-    }
-
-    function triggerGameOver() {
-      if (isGameOver || isCleared) return;
-      isGameOver = true;
-      audio.stop();
-      audio.playGameoverSound();
-      document.exitPointerLock();
-      crosshair.style.display = 'none';
-      ui.style.display = 'none';
-      minimapContainer.style.display = 'none';
-      gameoverOverlay.style.display = 'flex';
-    }
-
-    function triggerClear() {
-      if (isGameOver || isCleared) return;
-      isCleared = true;
-      audio.stop();
-      document.exitPointerLock();
-      crosshair.style.display = 'none';
-      ui.style.display = 'none';
-      minimapContainer.style.display = 'none';
-      clearOverlay.style.display = 'flex';
-    }
-
-    function drawMinimap() {
-      requestAnimationFrame(drawMinimap);
-      if (!isPlaying || isPaused || isChanceTime) return;
-
-      minimapCtx.clearRect(0, 0, 150, 150);
-
-      minimapCtx.fillStyle = 'rgba(10, 10, 15, 0.9)';
-      minimapCtx.fillRect(0, 0, 150, 150);
-
-      const cx = 75;
-      const cy = 75;
-      const scale = mapScaleBoost * 2.5;
-
-      keys.forEach(k => {
-        if (!k.collected) {
-          const rx = cx + (k.pos.x - player.position.x) * scale;
-          const rz = cy + (k.pos.z - player.position.z) * scale;
-          if (rx >= 0 && rx <= 150 && rz >= 0 && rz <= 150) {
-            minimapCtx.fillStyle = '#ffcc00';
-            minimapCtx.beginPath();
-            minimapCtx.arc(rx, rz, 3.5, 0, Math.PI * 2);
-            minimapCtx.fill();
-          }
+      monsters.forEach(m => {
+        const dx = (m.pos.x - player.position.x) * scale;
+        const dz = (m.pos.z - player.position.z) * scale;
+        if (Math.abs(dx) < 80 && Math.abs(dz) < 80 || revealEnemiesTimer > 0) {
+          miniCtx.fillStyle = m.isStunned ? '#00ff88' : '#ff0000';
+          miniCtx.beginPath(); miniCtx.arc(cx + dx, cy + dz, 4, 0, Math.PI * 2); miniCtx.fill();
         }
       });
 
-      const m1x = cx + (monster1.group.position.x - player.position.x) * scale;
-      const m1z = cy + (monster1.group.position.z - player.position.z) * scale;
-      minimapCtx.fillStyle = '#ff0000';
-      minimapCtx.beginPath();
-      minimapCtx.arc(m1x, m1z, 4, 0, Math.PI * 2);
-      minimapCtx.fill();
-
-      const m2x = cx + (monster2.group.position.x - player.position.x) * scale;
-      const m2z = cy + (monster2.group.position.z - player.position.z) * scale;
-      minimapCtx.fillStyle = '#ff00bb';
-      minimapCtx.beginPath();
-      minimapCtx.arc(m2x, m2z, 4, 0, Math.PI * 2);
-      minimapCtx.fill();
-
-      if (isBossSpawned) {
-        const mbx = cx + (bossMonster.group.position.x - player.position.x) * scale;
-        const mbz = cy + (bossMonster.group.position.z - player.position.z) * scale;
-        minimapCtx.fillStyle = '#ffffff';
-        minimapCtx.beginPath();
-        minimapCtx.arc(mbx, mbz, 6, 0, Math.PI * 2);
-        minimapCtx.fill();
-      }
-
-      minimapCtx.fillStyle = '#00ff88';
-      minimapCtx.beginPath();
-      minimapCtx.arc(cx, cy, 4.5, 0, Math.PI * 2);
-      minimapCtx.fill();
+      miniCtx.save();
+      miniCtx.translate(cx, cy);
+      miniCtx.rotate(-player.rotation.y);
+      miniCtx.fillStyle = '#ffffff';
+      miniCtx.beginPath();
+      miniCtx.moveTo(0, -6);
+      miniCtx.lineTo(-4, 4);
+      miniCtx.lineTo(4, 4);
+      miniCtx.closePath();
+      miniCtx.fill();
+      miniCtx.restore();
     }
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
 
     animate();
-    drawMinimap();
   </script>
 </body>
 </html>
