@@ -89,7 +89,6 @@
     }
     .chest-card:hover { transform: translateY(-8px) scale(1.05); border-color: #ffdd66; box-shadow: 0 0 20px #ffcc00; }
 
-    /* ストーリー・メモ閲覧モーダル */
     #memo-modal {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.85); display: none; justify-content: center; align-items: center;
@@ -97,16 +96,15 @@
     }
     .memo-content {
       background: #110808; border: 2px solid #b30000; border-left: 6px solid #ff3333;
-      padding: 30px 40px; width: 600px; max-width: 90%; box-shadow: 0 0 30px rgba(179,0,0,0.5);
+      padding: 30px 40px; width: 640px; max-width: 90%; box-shadow: 0 0 30px rgba(179,0,0,0.5);
     }
     .memo-title { font-size: 20px; color: #ffcc00; letter-spacing: 3px; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 8px; }
     .memo-body { font-size: 14px; line-height: 1.8; color: #d0d0d0; margin-bottom: 25px; white-space: pre-line; }
 
-    /* オープニングストーリー画面 */
     #story-intro-screen {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: #000; display: none; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 35; color: #eee; padding: 0 10%; text-align: center;
+      z-index: 35; color: #eee; padding: 0 12%; text-align: center;
     }
     .story-text { font-size: 16px; line-height: 2.2; color: #ccc; margin-bottom: 30px; letter-spacing: 2px; min-height: 120px; }
 
@@ -159,9 +157,9 @@
 
   <div id="ui">
     <div class="hud-box">
-      <div>『死の市』中央鳥居 [<span id="stage-name-hud">Lv.1</span>]</div>
-      <div style="margin-top:2px;">鍵: <span id="key-count" style="color:#ffcc00; font-weight:bold;">0 / 5</span></div>
-      <div>記録メモ [M]: <span id="memo-count" style="color:#00ff88; font-weight:bold;">0 / 4</span></div>
+      <div>『死の市』管理中枢 [<span id="stage-name-hud">Lv.1</span>]</div>
+      <div style="margin-top:2px;">認証の鍵: <span id="key-count" style="color:#ffcc00; font-weight:bold;">0 / 5</span></div>
+      <div>調査記録 [M]: <span id="memo-count" style="color:#00ff88; font-weight:bold;">0 / 4</span></div>
       <div>爆竹 [F]: <span id="firecracker-count" style="color:#ff3333; font-weight:bold;">0</span> 個</div>
       <div>TIME: <span id="timer-display">00:00</span></div>
     </div>
@@ -171,30 +169,28 @@
       <div style="margin-top:4px;">BATTERY</div>
       <div class="bar-bg"><div id="battery-bar" class="bar-fill"></div></div>
     </div>
-    <div style="font-size:10px; color:#aaa; margin-top:4px;">[E] 調べる | [F] 爆竹 | [Esc] ポーズ</div>
+    <div style="font-size:10px; color:#aaa; margin-top:4px;">[E] 調べる | [F] 爆竹で一時麻痺 | [Esc] ポーズ</div>
   </div>
 
   <div id="minimap-container"><canvas id="minimap-canvas" width="160" height="160"></canvas></div>
 
-  <!-- ストーリーメモ閲覧画面 -->
   <div id="memo-modal">
     <div class="memo-content">
-      <div class="memo-title" id="memo-modal-title">記録の断片</div>
+      <div class="memo-title" id="memo-modal-title">調査記録</div>
       <div class="memo-body" id="memo-modal-body">ここにテキストが入ります。</div>
       <button class="btn-action" onclick="closeMemoModal()" style="margin-top:0;">閉じる ([E] または クリック)</button>
     </div>
   </div>
 
-  <!-- オープニングストーリー画面 -->
   <div id="story-intro-screen">
-    <div style="font-size:24px; color:#b30000; letter-spacing:4px; margin-bottom:20px;">- 序章 -</div>
+    <div style="font-size:24px; color:#b30000; letter-spacing:4px; margin-bottom:20px;">- 序章：灰塵の谷の記憶 -</div>
     <div class="story-text" id="story-intro-text"></div>
     <button class="btn-action" id="story-next-btn" onclick="nextStoryIntro()">次へ</button>
   </div>
 
   <div id="chance-screen">
-    <div class="chance-title">✨ CHANCE TIME ✨</div>
-    <div style="margin-bottom:20px; color:#aaa;">運命の宝箱を選べ...</div>
+    <div class="chance-title">✨ 調査補給チャンス ✨</div>
+    <div style="margin-bottom:20px; color:#aaa;">管理棟の備品箱を選べ...</div>
     <div class="box-container">
       <div class="chest-card" onclick="selectChanceBox(0)"><div style="font-size:40px;">🎁</div><div>壱</div></div>
       <div class="chest-card" onclick="selectChanceBox(1)"><div style="font-size:40px;">🎁</div><div>弐</div></div>
@@ -229,7 +225,7 @@
 
   <div id="title-screen">
     <div style="font-size:64px; color:#b30000; font-weight:bold; letter-spacing:10px;">死 の 市</div>
-    <div style="font-size:12px; color:#888; letter-spacing:4px; margin-bottom:15px;">- 朱い鳥居の午前零時 -</div>
+    <div style="font-size:12px; color:#888; letter-spacing:4px; margin-bottom:15px;">- 旧名称：灰塵の谷 -</div>
     
     <div class="diff-selector">
       <button class="diff-btn" onclick="setDifficulty('easy', this)">EASY</button>
@@ -237,34 +233,34 @@
       <button class="diff-btn" onclick="setDifficulty('hard', this)">HARD</button>
     </div>
 
-    <button class="btn-action" id="start-btn" onclick="startStoryIntro()">街 に 入 る</button>
+    <button class="btn-action" id="start-btn" onclick="startStoryIntro()">谷 へ 足 を 踏 み 入 れ る</button>
     <button class="btn-action" onclick="openOptions('title')">オプション設定</button>
     <div style="font-size:11px; color:#777; margin-top:20px; line-height:1.6; text-align:center;">
-      [W/A/S/D] 移動 | [Shift] ダッシュ | [E] 調べる・取得<br>
-      [F] 爆竹使用（怪物麻痺）<br>
-      ※街に隠された「記録のメモ」を集め、消失した街の真実と友人の行方を追え。
+      [W/A/S/D] 移動 | [Shift] ダッシュ | [E] 認証の鍵・調査記録の回収<br>
+      [F] 爆竹使用（敏感な感覚器官を刺激しモンスターを一時麻痺）<br>
+      ※親友の足跡を追い、管理中枢のセキュリティを解除して生還せよ。
     </div>
   </div>
 
   <div id="gameover-overlay">
     <div style="font-size:72px; color:#f00; font-weight:bold;">S L A U G H T E R</div>
-    <div style="color:#ccc; margin-bottom:20px;">あなたの魂は闇に囚われた...</div>
+    <div style="color:#ccc; margin-bottom:20px;">あなたの魂は地底の澱みに呑まれた...</div>
     <button class="btn-action" onclick="returnToTitle()">タイトルへ戻る</button>
   </div>
 
   <div id="next-stage-overlay">
-    <div style="font-size:54px; color:#ffcc00; font-weight:bold;" id="next-stage-title">STAGE 1 CLEAR</div>
-    <div style="margin:15px 0; color:#eee; font-size:18px;" id="next-stage-desc">Lv.2 に進みますか？</div>
-    <div style="font-size:13px; color:#ff4444; margin-bottom:25px;">※Lv.2はさらに凶悪な赤き空間・ハードの2倍の難易度になります</div>
+    <div style="font-size:54px; color:#ffcc00; font-weight:bold;" id="next-stage-title">SECURITY UNLOCKED</div>
+    <div style="margin:15px 0; color:#eee; font-size:18px;" id="next-stage-desc">最深部へ進みますか？</div>
+    <div style="font-size:13px; color:#ff4444; margin-bottom:25px;">※最深部はさらに危険な環境澱みが渦巻くエリアです</div>
     <div style="display: flex; gap: 20px;">
-      <button class="btn-action" onclick="startLevel2()" style="margin-top:0; background:#800000; border-color:#f00;">はい (Lv.2へ)</button>
+      <button class="btn-action" onclick="startLevel2()" style="margin-top:0; background:#800000; border-color:#f00;">はい (最深部へ)</button>
       <button class="btn-action" onclick="returnToTitle()" style="margin-top:0;">いいえ (タイトルへ)</button>
     </div>
   </div>
 
   <div id="clear-overlay">
     <div style="font-size:54px; color:#00ff88; font-weight:bold;">T R U E  E S C A P E</div>
-    <div style="margin:10px 0; color:#eee;" id="clear-story-summary">街の真実を暴き、現世へ生還した！</div>
+    <div style="margin:10px 0; color:#eee;" id="clear-story-summary">真実を暴き、谷から生還した！</div>
     <div style="font-size:20px; color:#ffcc00;" id="clear-rank">RANK: S</div>
     <div style="font-size:14px; color:#aaa; margin-bottom:20px;" id="clear-time-text">TIME: 00:00</div>
     <button class="btn-action" onclick="returnToTitle()">タイトルへ戻る</button>
@@ -370,46 +366,6 @@
           this.melodyInterval = setTimeout(playScaryMelody, (this.isLevel2 ? 1500 : 2500) + Math.random() * 2000);
         };
         playScaryMelody();
-
-        const playCicada = () => {
-          if (!this.isBgmPlaying || !this.ctx) return;
-          const now = this.ctx.currentTime;
-          const duration = 2.0 + Math.random() * 2.5;
-
-          const bufferSize = this.ctx.sampleRate * duration;
-          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1;
-          }
-
-          const noise = this.ctx.createBufferSource();
-          noise.buffer = buffer;
-
-          const filter = this.ctx.createBiquadFilter();
-          filter.type = 'bandpass';
-          filter.frequency.setValueAtTime(this.isLevel2 ? 4500 : 5800, now);
-          filter.Q.setValueAtTime(20, now);
-
-          const gain = this.ctx.createGain();
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(this.isLevel2 ? 0.08 : 0.05, now + 0.3);
-          
-          for (let t = 0.3; t < duration - 0.3; t += 0.06) {
-            gain.gain.setValueAtTime(0.02 + Math.random() * (this.isLevel2 ? 0.08 : 0.05), now + t);
-          }
-          gain.gain.linearRampToValueAtTime(0.001, now + duration);
-
-          noise.connect(filter);
-          filter.connect(gain);
-          gain.connect(this.masterGain);
-
-          noise.start(now);
-          noise.stop(now + duration);
-
-          this.cicadaInterval = setTimeout(playCicada, (duration + 0.8 + Math.random() * 1.5) * 1000);
-        };
-        playCicada();
       }
       stopBGM() {
         this.isBgmPlaying = false;
@@ -508,25 +464,6 @@
 
           osc.start(now + n.t);
           osc.stop(now + n.t + n.d + 0.1);
-        });
-
-        const chimeFreqs = [1567.98, 2093.00, 2637.02, 3135.96];
-        chimeFreqs.forEach((cf, idx) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(cf, now + 0.8 + idx * 0.15);
-
-          gain.gain.setValueAtTime(0.001, now + 0.8 + idx * 0.15);
-          gain.gain.linearRampToValueAtTime(0.12, now + 0.85 + idx * 0.15);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8 + idx * 0.15);
-
-          osc.connect(gain);
-          gain.connect(this.masterGain);
-
-          osc.start(now + 0.8 + idx * 0.15);
-          osc.stop(now + 2.2 + idx * 0.15);
         });
       }
       playSE(freq, duration, type='sine') {
@@ -642,13 +579,6 @@
       ctx.lineWidth = 12;
       ctx.strokeRect(32, 32, 960, 960);
 
-      ctx.strokeStyle = isRed ? '#ff3333' : '#d4af37';
-      ctx.lineWidth = 8;
-      ctx.setLineDash([30, 20]);
-      ctx.beginPath(); ctx.moveTo(512, 64); ctx.lineTo(512, 960); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(64, 512); ctx.lineTo(960, 512); ctx.stroke();
-      ctx.setLineDash([]);
-
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
@@ -714,7 +644,6 @@
       const isLv2 = (currentLevel === 2);
       const bldgMat = new THREE.MeshStandardMaterial({ color: isLv2 ? 0x220505 : 0x121418, roughness: 0.8 });
       const roofMat = new THREE.MeshStandardMaterial({ color: isLv2 ? 0x0d0202 : 0x08090c, roughness: 0.95 });
-      const windowMat = new THREE.MeshBasicMaterial({ color: isLv2 ? 0x550000 : 0x2e2310 });
 
       for (let z = -60; z <= 35; z += 18) {
         for (let x = -40; x <= 40; x += 22) {
@@ -730,17 +659,6 @@
           roof.position.set(x, h + 0.2, z);
           scene.add(roof);
           buildingMeshes.push(roof);
-
-          for (let wy = 2; wy < h - 1; wy += 2.5) {
-            for (let wx = -w/2 + 2; wx <= w/2 - 2; wx += 3) {
-              if (Math.random() > 0.6) {
-                const win = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.4), windowMat);
-                win.position.set(x + wx, wy, z + d/2 + 0.05);
-                scene.add(win);
-                buildingMeshes.push(win);
-              }
-            }
-          }
 
           buildingColliders.push({ minX: x - w/2 - 0.6, maxX: x + w/2 + 0.6, minZ: z - d/2 - 0.6, maxZ: z + d/2 + 0.6 });
           buildingRenderData.push({ x, z, w, d });
@@ -766,7 +684,6 @@
       return group;
     }
 
-    // ストーリーメモ（ノート）の3Dメッシュ作成
     function createMemoMesh() {
       const group = new THREE.Group();
       const paperMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, roughness: 0.8 });
@@ -787,23 +704,22 @@
     let gateActivated = false;
     let fastMonsterSpawned = false;
 
-    // ストーリー用メモのデータ内容
     const storyMemosData = [
       {
-        title: "記録の断片 壱：消えゆく日常",
-        text: "『日付：不明』\n最近、この街の様子がおかしい。夜になると空に巨大な赤い月が浮かび、町内の住人たちが一人、また一人と姿を消している。警察に連絡しようにも、この街に通じる電話もネットもすべて不通だ。外に出ようとしても、霧の向こうへ進むと元の場所に戻されてしまう。"
+        title: "調査記録 壱：灰塵の谷の由来",
+        text: "『旧鉱山都市・記録抜粋』\nかつてこの地は、地下から湧き出る特殊な鉱石やエネルギー資源を利用して栄えた「灰塵の谷」という活気ある鉱山都市だった。\nしかし、富に目がくらんだ為政者たちが禁忌とされる地下深部を掘り進めた結果、地底に封印されていた古代の災厄――負の感情や環境の澱みが実体化した「モンスター」が地上へあふれ出した。"
       },
       {
-        title: "記録の断片 弐：禁忌の儀式",
-        text: "『日付：不明』\n古い伝承によれば、この街の地下にはかつて村を災いから守るための「朱い鳥居」があったという。しかし、欲に目がくらんだ町長一派が禁忌の儀式を行い、鳥居の封印を解いてしまったらしい。それ以来、住民たちは理性を失い、奇妙な「忌み人」へと変貌し始めた。"
+        title: "調査記録 弐：変貌した死の市",
+        text: "『廃墟の残骸にて発見』\n都市は瞬く間に破壊し尽くされ、人々が逃げ去ったあとの廃墟はいつしか「死の市」と呼ばれるようになった。近づく者のない呪われた地と化したこの場所で、かつての鉱山都市のインフラや中枢制御システムは今もなお深部で稼働し続けている。"
       },
       {
-        title: "記録の断片 参：友人の足跡",
-        text: "『日付：おそくとも数日前？』\nもしこれを誰かが見つけているなら……私はもう戻れないかもしれない。友人の行方を追ってこの街に踏み込んだが、あの怪物たちに見つかり、鳥居の近くまで追い詰められた。鍵を5つ集めて鳥居の封印を解かなければ、永遠にここから出られない……！"
+        title: "調査記録 参：親友の手記",
+        text: "『親友の研究手記より』\n「谷の底にあるエネルギー源（遺産）を使えば、世界を覆う別の危機を解決できる」\n私はその強い確信から、周囲の反対を押し飾り、たった一人でかつての死の市へと足を踏み入れた。\nもし私が戻らなければ、この先の中枢システムに眠る真実を探してほしい。"
       },
       {
-        title: "記録の断片 肆：生還への鍵",
-        text: "『日付：終焉』\n赤い空間（Lv.2）に足を踏み入れてしまったら最後、人間の精神は急速に汚染される。だが、諦めるな。中央の朱い鳥居に5つの鍵を捧げ、この街の呪いの真実を暴いた者だけが、現世への生還（True Escape）を果たすことができる。"
+        title: "調査記録 肆：防衛マニュアルと爆竹の弱点",
+        text: "『現地調査の古い防衛記録』\nこの市に巣食うモンスターたちは、長年の暗闇と静寂の中で進化・適応したため、「特定の強烈な光・振動・高周波の音」に対して過敏な感覚器官を持つ。\n私たちが普段使うような「爆竹」の持つ特殊な火薬の炸裂音と閃光は、彼らの知覚神経を一時的にショートさせ、行動を完全にフリーズ（麻痺）させる最大の弱点となる。"
       }
     ];
 
@@ -845,666 +761,523 @@
       memoItems.forEach(m => scene.remove(m.mesh));
       memoItems.length = 0;
       collectedMemosCount = 0;
-      document.getElementById('memo-count').textContent = `0 / ${storyMemosData.length}`;
-
-      gateActivated = false;
-      fastMonsterSpawned = false;
-      if (escapeGateMesh) escapeGateMesh.material.opacity = 0.0;
-
-      for (let i = 0; i < 5; i++) {
-        const pos = getRandomSafePosition();
-        const mesh = createKeyMesh();
-        mesh.position.copy(pos);
-        scene.add(mesh);
-        keys.push({ mesh, pos, collected: false });
-      }
-
-      // ストーリーメモの配置（全4個）
-      for (let i = 0; i < storyMemosData.length; i++) {
-        const pos = getRandomSafePosition();
-        const mesh = createMemoMesh();
-        mesh.position.copy(pos);
-        scene.add(mesh);
-        memoItems.push({ mesh, pos, collected: false, id: i });
-      }
-
-      function createBatteryMesh() {
-        const group = new THREE.Group();
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.32, 16), bodyMat);
-        body.position.y = 0.16; group.add(body);
-
-        const capMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
-        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 12), capMat);
-        cap.position.y = 0.33; group.add(cap);
-
-        const stripeMat = new THREE.MeshStandardMaterial({ color: currentLevel === 2 ? 0xff0000 : 0xffaa00, metalness: 0.6, roughness: 0.4 });
-        const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.102, 0.102, 0.1, 16), stripeMat);
-        stripe.position.y = 0.22; group.add(stripe);
-
-        group.rotation.z = Math.PI / 2;
-        return group;
-      }
+      document.getElementById('memo-count').innerText = `0 / ${storyMemosData.length}`;
 
       batteries.forEach(b => scene.remove(b.mesh));
       batteries.length = 0;
-      for (let i = 0; i < 4; i++) {
-        const pos = getRandomSafePosition();
-        const mesh = createBatteryMesh();
-        mesh.position.copy(pos); scene.add(mesh);
-        batteries.push({ mesh, pos, collected: false });
-      }
-
-      function createFirecrackerMesh() {
-        const group = new THREE.Group();
-        const redMat = new THREE.MeshStandardMaterial({ color: 0xcc1111, roughness: 0.5 });
-        const fuseMat = new THREE.MeshBasicMaterial({ color: 0xddccaa });
-        const bandMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-
-        const offsets = [{x: -0.06, z: -0.04}, {x: 0.06, z: -0.04}, {x: 0, z: 0.06}];
-        offsets.forEach(off => {
-          const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.28, 12), redMat);
-          stick.position.set(off.x, 0.14, off.z); group.add(stick);
-
-          const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.1, 8), fuseMat);
-          fuse.position.set(off.x, 0.31, off.z); fuse.rotation.z = (Math.random() - 0.5) * 0.4; group.add(fuse);
-        });
-
-        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 12), bandMat);
-        band.position.y = 0.14; group.add(band);
-
-        return group;
-      }
-
-      firecrackerItems.forEach(fc => scene.remove(fc.mesh));
+      firecrackerItems.forEach(f => scene.remove(f.mesh));
       firecrackerItems.length = 0;
-      for (let i = 0; i < 4; i++) {
+
+      for (let i = 0; i < 5; i++) {
+        const mesh = createKeyMesh();
         const pos = getRandomSafePosition();
-        const mesh = createFirecrackerMesh();
-        mesh.position.copy(pos); scene.add(mesh);
-        firecrackerItems.push({ mesh, pos, collected: false });
+        mesh.position.copy(pos);
+        scene.add(mesh);
+        keys.push({ mesh, collected: false });
       }
-    }
 
-    function createScaryMonster(isFast = false) {
-      const group = new THREE.Group();
+      for (let i = 0; i < storyMemosData.length; i++) {
+        const mesh = createMemoMesh();
+        const pos = getRandomSafePosition();
+        mesh.position.copy(pos);
+        scene.add(mesh);
+        memoItems.push({ mesh, collected: false, index: i });
+      }
 
-      const bodyMat = new THREE.MeshStandardMaterial({ color: currentLevel === 2 ? 0x3d0000 : 0x221111, roughness: 0.9, metalness: 0.1 });
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.35, 3.6, 8), bodyMat);
-      body.position.y = 1.8; group.add(body);
-
-      const ribMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.5 });
       for (let i = 0; i < 4; i++) {
-        const rib = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.2), ribMat);
-        rib.position.set(0, 1.2 + i * 0.4, 0.1);
-        group.add(rib);
+        const bGroup = new THREE.Group();
+        const bMat = new THREE.MeshStandardMaterial({ color: 0x0088ff, metalness: 0.8 });
+        const bMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.2), bMat);
+        bGroup.add(bMesh);
+        const pos = getRandomSafePosition();
+        bGroup.position.copy(pos);
+        scene.add(bGroup);
+        batteries.push({ mesh: bGroup, collected: false });
       }
 
-      const headMat = new THREE.MeshStandardMaterial({ color: 0x180808, roughness: 0.8 });
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), headMat);
-      head.position.y = 3.6; head.scale.set(0.85, 1.5, 1.1); group.add(head);
-
-      const mouthMat = new THREE.MeshBasicMaterial({ color: 0x330000 });
-      const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.3), mouthMat);
-      mouth.position.set(0, 3.35, 0.35); group.add(mouth);
-
-      const eyeMat = new THREE.MeshBasicMaterial({ color: currentLevel === 2 ? 0x00ffff : (isFast ? 0xffaa00 : 0xff0000) });
-      for (let i = -1; i <= 1; i += 2) {
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), eyeMat);
-        eye.position.set(i * 0.22, 3.75, 0.38); group.add(eye);
-        const eyeSub = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), eyeMat);
-        eyeSub.position.set(i * 0.12, 3.9, 0.35); group.add(eyeSub);
+      for (let i = 0; i < 3; i++) {
+        const fGroup = new THREE.Group();
+        const fMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.5 });
+        const fMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.4, 12), fMat);
+        fGroup.add(fMesh);
+        const pos = getRandomSafePosition();
+        fGroup.position.copy(pos);
+        scene.add(fGroup);
+        firecrackerItems.push({ mesh: fGroup, collected: false });
       }
 
-      const lightColor = currentLevel === 2 ? 0xff0055 : (isFast ? 0xff6600 : 0xff0000);
-      const monsterLight = new THREE.PointLight(lightColor, 2.5, 8);
-      monsterLight.position.set(0, 3.5, 0); group.add(monsterLight);
-
-      scene.add(group);
-      
-      let baseSpd = isFast ? 4.8 : 2.4;
-      if (currentLevel === 2) baseSpd *= 2.0;
-
-      return { 
-        group, 
-        pos: group.position, 
-        isStunned: false, 
-        stunTimer: 0, 
-        isFast: isFast,
-        baseSpeed: baseSpd
-      };
+      gateActivated = false;
+      escapeGateMesh.material.opacity = 0.0;
+      updateHUD();
     }
 
-    let monsters = [ createScaryMonster(false), createScaryMonster(false) ];
+    class Monster {
+      constructor() {
+        this.mesh = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, skinning: false });
+        
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 2.2, 8), mat);
+        body.position.y = 1.1; this.mesh.add(body);
+        
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), mat);
+        head.position.y = 2.4; this.mesh.add(head);
 
-    function setupEnvironmentForLevel(lvl) {
-      currentLevel = lvl;
-      document.getElementById('stage-name-hud').textContent = `Lv.${lvl}`;
-      if (lvl === 2) {
-        scene.background = new THREE.Color(0x120202);
-        scene.fog = new THREE.FogExp2(0x120202, 0.025);
-        floor.material.map = redAsphaltTex;
-        floor.material.needsUpdate = true;
-        moonMat.color.setHex(0xff0000);
-        redMoonLight.color.setHex(0xff0000);
-      } else {
-        scene.background = new THREE.Color(0x040608);
-        scene.fog = new THREE.FogExp2(0x040608, 0.020);
-        floor.material.map = asphaltTex;
-        floor.material.needsUpdate = true;
-        moonMat.color.setHex(0xff2222);
-        redMoonLight.color.setHex(0xff3333);
+        const eyeGeo = new THREE.SphereGeometry(0.08, 8, 8);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(0.18, 2.45, -0.35); this.mesh.add(eyeL);
+        const eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.position.set(-0.18, 2.45, -0.35); this.mesh.add(eyeR);
+
+        this.mesh.position.set(20, 0, -35);
+        scene.add(this.mesh);
+
+        this.speed = 0.042;
+        this.baseSpeed = 0.042;
+        this.stunTimer = 0;
+        this.isChasing = false;
       }
-      buildCity();
-      createTorii();
-    }
-
-    let isPlaying = false, isPaused = false, isChanceTime = false, isMemoReading = false;
-    let stamina = 100, battery = 100, firecrackers = 0;
-    let isSprinting = false;
-    let keysCount = 0;
-    let revealEnemiesTimer = 0;
-    let nearbyItemAction = null;
-
-    let moveF = false, moveB = false, moveL = false, moveR = false;
-
-    // ストーリーメモモーダルを開く関数
-    function openMemoModal(memoId) {
-      isMemoReading = true;
-      document.exitPointerLock();
-      const mData = storyMemosData[memoId];
-      document.getElementById('memo-modal-title').textContent = mData.title;
-      document.getElementById('memo-modal-body').textContent = mData.text;
-      document.getElementById('memo-modal').style.display = 'flex';
-    }
-
-    window.closeMemoModal = function() {
-      document.getElementById('memo-modal').style.display = 'none';
-      isMemoReading = false;
-      document.body.requestPointerLock();
-    }
-
-    // オープニングストーリー進行管理
-    let storyIntroStep = 0;
-    const storyIntroTexts = [
-      "かつて活気に満ちていた「死の市」は、ある夜を境に一瞬で地図から消え去った。",
-      "原因は、住民たちが犯した禁忌と、街の中心にそびえる「朱い鳥居」の呪いだったと言われている。",
-      "主人公は、数日前にその街へ足を踏み入れたまま行方不明になった親しい友人の足跡を追い、午前零時にだけ開くという鳥居の門をくぐる。",
-      "「なぜ街は消えたのか。友人はどこへ消えたのか。」——すべての謎を解き、この漆黒の異界から生還せよ。"
-    ];
-
-    function startStoryIntro() {
-      document.getElementById('title-screen').style.display = 'none';
-      storyIntroStep = 0;
-      document.getElementById('story-intro-text').textContent = storyIntroTexts[storyIntroStep];
-      document.getElementById('story-intro-screen').style.display = 'flex';
-    }
-
-    function nextStoryIntro() {
-      storyIntroStep++;
-      if (storyIntroStep < storyIntroTexts.length) {
-        document.getElementById('story-intro-text').textContent = storyIntroTexts[storyIntroStep];
-      } else {
-        document.getElementById('story-intro-screen').style.display = 'none';
-        startGameAfterIntro();
+      reset(x, z) {
+        this.mesh.position.set(x, 0, z);
+        this.stunTimer = 0;
+        this.isChasing = false;
       }
-    }
-
-    function triggerChanceTime() {
-      isChanceTime = true;
-      document.exitPointerLock();
-      document.getElementById('chance-result').textContent = '';
-      document.getElementById('chance-screen').style.display = 'flex';
-    }
-
-    window.selectChanceBox = function(idx) {
-      const options = [
-        { text: "🎆 爆竹を2個獲得！", act: () => { firecrackers += 2; updateUI(); } },
-        { text: "📡 敵の位置を10秒間可視化！", act: () => { revealEnemiesTimer = 10.0; } },
-        { text: "🔋 バッテリー全回復！", act: () => { battery = 100; } },
-        { text: "⚠️ ハズレ！モンスターが至近距離に！", act: () => { monsters[0].pos.set(player.position.x + 3, 0, player.position.z + 3); } }
-      ];
-      const res = options[Math.floor(Math.random() * options.length)];
-      document.getElementById('chance-result').textContent = res.text;
-      res.act();
-      setTimeout(() => {
-        document.getElementById('chance-screen').style.display = 'none';
-        isChanceTime = false;
-        document.body.requestPointerLock();
-      }, 1500);
-    };
-
-    function showMsg(txt) {
-      const log = document.getElementById('message-log');
-      log.textContent = txt; log.style.opacity = '1';
-      setTimeout(() => { log.style.opacity = '0'; }, 2500);
-    }
-
-    function updateUI() {
-      document.getElementById('key-count').textContent = `${keysCount} / 5`;
-      document.getElementById('firecracker-count').textContent = firecrackers;
-      document.getElementById('stamina-bar').style.width = `${stamina}%`;
-      document.getElementById('battery-bar').style.width = `${battery}%`;
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (isMemoReading) {
-        if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Escape') {
-          closeMemoModal();
+      update(delta) {
+        if (this.stunTimer > 0) {
+          this.stunTimer -= delta;
+          this.mesh.rotation.y += 0.1;
+          return;
         }
-        return;
-      }
-      if (e.code === 'KeyW') moveF = true;
-      if (e.code === 'KeyS') moveB = true;
-      if (e.code === 'KeyA') moveL = true;
-      if (e.code === 'KeyD') moveR = true;
-      if (e.code === 'ShiftLeft') isSprinting = true;
-      if (e.code === 'KeyE') {
-        if (nearbyItemAction) {
-          nearbyItemAction();
-          nearbyItemAction = null;
-          document.getElementById('interact-prompt').style.display = 'none';
+
+        const pPos = player.position;
+        const mPos = this.mesh.position;
+        const dist = mPos.distanceTo(pPos);
+
+        const flashlightDir = new THREE.Vector3();
+        camera.getWorldDirection(flashlightDir);
+        const toPlayer = new THREE.Vector3().subVectors(pPos, mPos).normalize();
+        const inFlashlight = flashlightDir.dot(toPlayer) < -0.4 && dist < 18;
+
+        if (dist < 14 || inFlashlight) {
+          this.isChasing = true;
         }
-      }
-      if (e.code === 'KeyF') {
-        if (firecrackers > 0) {
-          firecrackers--;
-          updateUI();
-          showMsg("爆竹を使用！爆音で怪物たちが麻痺！");
-          audio.playSE(900, 0.5, 'sawtooth');
-          monsters.forEach(m => { m.isStunned = true; m.stunTimer = 6.0; });
+
+        if (this.isChasing) {
+          const targetAngle = Math.atan2(pPos.x - mPos.x, pPos.z - mPos.z);
+          this.mesh.rotation.y = targetAngle;
+          
+          let curSpeed = this.speed * diffParams.speedMult;
+          if (currentLevel === 2) curSpeed *= 1.25;
+
+          const moveStep = curSpeed;
+          mPos.x += Math.sin(targetAngle) * moveStep;
+          mPos.z += Math.cos(targetAngle) * moveStep;
+
+          if (dist < 2.0) {
+            triggerJumpscare();
+          }
         } else {
-          showMsg("爆竹を持っていません！");
+          this.mesh.rotation.y += 0.01;
         }
       }
-      if (e.code === 'Escape') togglePause();
+      stun() {
+        this.stunTimer = 6.0;
+        audio.playSE(220, 0.8, 'sawtooth');
+        showGameMessage("モンスターは爆竹の音と閃光で一時麻痺した！");
+      }
+    }
+
+    const monsters = [new Monster()];
+
+    let keysCollected = 0;
+    let stamina = 100;
+    let battery = 100;
+    let firecrackers = 1;
+    let flashlightOn = true;
+    let gameActive = false;
+    let isPaused = false;
+
+    const keyStates = { KeyW: false, KeyA: false, KeyS: false, KeyD: false, ShiftLeft: false };
+
+    window.addEventListener('keydown', (e) => {
+      if (!gameActive || isPaused) return;
+      if (e.code in keyStates) keyStates[e.code] = true;
+      if (e.code === 'KeyF') useFirecracker();
+      if (e.code === 'KeyE') checkInteraction();
+      if (e.code === 'KeyM') toggleMemoListModal();
     });
 
-    document.addEventListener('keyup', (e) => {
-      if (e.code === 'KeyW') moveF = false;
-      if (e.code === 'KeyS') moveB = false;
-      if (e.code === 'KeyA') moveL = false;
-      if (e.code === 'KeyD') moveR = false;
-      if (e.code === 'ShiftLeft') isSprinting = false;
+    window.addEventListener('keyup', (e) => {
+      if (e.code in keyStates) keyStates[e.code] = false;
     });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isPlaying || isPaused || isChanceTime || isMemoReading) return;
+    window.addEventListener('mousemove', (e) => {
+      if (!gameActive || isPaused || document.pointerLockElement !== renderer.domElement) return;
       player.rotation.y -= e.movementX * mouseSensitivity;
       camera.rotation.x -= e.movementY * mouseSensitivity;
       camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
     });
 
-    function togglePause() {
-      if (!isPlaying || isChanceTime || isMemoReading) return;
-      isPaused = !isPaused;
-      document.getElementById('pause-menu').style.display = isPaused ? 'flex' : 'none';
-      if (isPaused) {
-        document.exitPointerLock();
-        audio.stopBGM();
-      } else {
-        document.body.requestPointerLock();
-        audio.startBGM(currentLevel === 2);
+    renderer.domElement.addEventListener('click', () => {
+      if (gameActive && !isPaused && document.pointerLockElement !== renderer.domElement) {
+        renderer.domElement.requestPointerLock();
       }
-    }
-    document.getElementById('resume-btn').onclick = togglePause;
+    });
 
-    function startGameAfterIntro() {
-      setupEnvironmentForLevel(1);
-      isPlaying = true; isPaused = false; keysCount = 0; stamina = 100; battery = 100; playTime = 0;
-      document.getElementById('ui').style.display = 'block';
-      document.getElementById('crosshair').style.display = 'block';
-      document.getElementById('minimap-container').style.display = 'block';
-      document.body.requestPointerLock();
-      audio.startBGM(false);
-      spawnMonsters();
-      spawnItems();
-
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        if (isPlaying && !isPaused && !isMemoReading) {
-          playTime++;
-          const mins = String(Math.floor(playTime / 60)).padStart(2, '0');
-          const secs = String(playTime % 60).padStart(2, '0');
-          document.getElementById('timer-display').textContent = `${mins}:${secs}`;
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape') {
+        if (gameActive) {
+          if (isPaused) closePauseMenu();
+          else openPauseMenu();
         }
-      }, 1000);
+      }
+    });
+
+    function openPauseMenu() {
+      isPaused = true;
+      document.exitPointerLock();
+      document.getElementById('pause-menu').style.display = 'flex';
     }
 
-    function spawnMonsters() {
-      monsters.forEach(m => scene.remove(m.group));
-      monsters.length = 0;
-      monsters.push(createScaryMonster(false));
-      monsters.push(createScaryMonster(false));
-      monsters[0].pos.set(-25, 0, -25);
-      monsters[1].pos.set(25, 0, -25);
-    }
-
-    window.startLevel2 = function() {
-      document.getElementById('next-stage-overlay').style.display = 'none';
-      setupEnvironmentForLevel(2);
-      keysCount = 0;
-      stamina = 100;
-      battery = 100;
-      firecrackers = Math.max(0, firecrackers);
-      isPlaying = true;
+    function closePauseMenu() {
       isPaused = false;
-      document.body.requestPointerLock();
-      audio.startBGM(true);
-      spawnMonsters();
-      spawnItems();
-      showMsg("Lv.2 へ突入：難易度倍増・赤き空間の真実へ");
-    };
+      document.getElementById('pause-menu').style.display = 'none';
+      renderer.domElement.requestPointerLock();
+    }
+
+    document.getElementById('resume-btn').addEventListener('click', closePauseMenu);
 
     function returnToTitle() {
-      isPlaying = false; isPaused = false; isChanceTime = false; isMemoReading = false; currentLevel = 1;
-      document.exitPointerLock();
+      gameActive = false;
+      isPaused = false;
       audio.stopBGM();
       if (timerInterval) clearInterval(timerInterval);
-      document.getElementById('title-screen').style.display = 'flex';
       document.getElementById('pause-menu').style.display = 'none';
       document.getElementById('options-screen').style.display = 'none';
       document.getElementById('gameover-overlay').style.display = 'none';
       document.getElementById('clear-overlay').style.display = 'none';
       document.getElementById('next-stage-overlay').style.display = 'none';
-      document.getElementById('memo-modal').style.display = 'none';
-      document.getElementById('story-intro-screen').style.display = 'none';
       document.getElementById('ui').style.display = 'none';
-      document.getElementById('crosshair').style.display = 'none';
       document.getElementById('minimap-container').style.display = 'none';
-      player.position.set(0, 1.6, 1);
-      player.rotation.set(0, 0, 0);
-      camera.rotation.set(0, 0, 0);
-      setupEnvironmentForLevel(1);
+      document.getElementById('crosshair').style.display = 'none';
+      document.getElementById('title-screen').style.display = 'flex';
     }
 
-    function triggerGameOver() {
-      isPlaying = false;
-      document.exitPointerLock();
-      audio.stopBGM();
+    let storyIntroIndex = 0;
+    const storyIntroTexts = [
+      "かつて地下鉱物資源で栄えた「灰塵の谷」。だが、禁忌の深部採掘によって地底の澱みが解放され、街は一瞬で「死の市」へと変貌した。",
+      "数日前、世界を救う手掛かり（遺産）を求め、親友がたった一人でこの死の市へ足を踏み入れたまま戻らなくなった。",
+      "あなたは親友の足跡を追い、懐中電灯を片手に、濃い霧と不気味な気配が漂う死の市の中枢へと足を踏み入れる……。"
+    ];
+
+    function startStoryIntro() {
+      document.getElementById('title-screen').style.display = 'none';
+      document.getElementById('story-intro-screen').style.display = 'flex';
+      storyIntroIndex = 0;
+      document.getElementById('story-intro-text').innerText = storyIntroTexts[storyIntroIndex];
+    }
+
+    function nextStoryIntro() {
+      storyIntroIndex++;
+      if (storyIntroIndex < storyIntroTexts.length) {
+        document.getElementById('story-intro-text').innerText = storyIntroTexts[storyIntroIndex];
+      } else {
+        document.getElementById('story-intro-screen').style.display = 'none';
+        startGame();
+      }
+    }
+
+    function startGame() {
+      audio.startBGM(currentLevel === 2);
+      gameActive = true;
+      isPaused = false;
+      keysCollected = 0;
+      battery = 100;
+      stamina = 100;
+      firecrackers = currentLevel === 2 ? 2 : 1;
+      playTime = 0;
+      fastMonsterSpawned = false;
+
+      player.position.set(0, 1.6, 2);
+      player.rotation.set(0, 0, 0);
+      camera.rotation.set(0, 0, 0);
+
+      if (currentLevel === 2) {
+        floor.material.map = redAsphaltTex;
+        floor.material.needsUpdate = true;
+        document.getElementById('stage-name-hud').innerText = 'Lv.2 最深部';
+      } else {
+        floor.material.map = asphaltTex;
+        floor.material.needsUpdate = true;
+        document.getElementById('stage-name-hud').innerText = 'Lv.1 管理棟';
+      }
+
+      buildCity();
+      createTorii();
+      spawnItems();
+
+      monsters.forEach(m => m.reset((Math.random() - 0.5) * 50, -45));
+
+      document.getElementById('ui').style.display = 'block';
+      document.getElementById('minimap-container').style.display = 'block';
+      document.getElementById('crosshair').style.display = 'block';
+
       if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (gameActive && !isPaused) {
+          playTime++;
+          const min = String(Math.floor(playTime / 60)).padStart(2, '0');
+          const sec = String(playTime % 60).padStart(2, '0');
+          document.getElementById('timer-display').innerText = `${min}:${sec}`;
+        }
+      }, 1000);
 
+      renderer.domElement.requestPointerLock();
+    }
+
+    function showGameMessage(text) {
+      const msg = document.getElementById('message-log');
+      msg.innerText = text;
+      msg.style.opacity = 1;
+      setTimeout(() => { msg.style.opacity = 0; }, 2500);
+    }
+
+    function useFirecracker() {
+      if (firecrackers <= 0) {
+        showGameMessage("爆竹の持ち合わせがない！");
+        return;
+      }
+      firecrackers--;
+      audio.playSE(100, 0.4, 'square');
+      showGameMessage("爆竹を投げた！周囲のモンスターが麻痺する！");
+
+      monsters.forEach(m => {
+        if (m.mesh.position.distanceTo(player.position) < 22) {
+          m.stun();
+        }
+      });
+      updateHUD();
+    }
+
+    function checkInteraction() {
+      const pPos = player.position;
+
+      for (let k of keys) {
+        if (!k.collected && k.mesh.position.distanceTo(pPos) < 2.5) {
+          k.collected = true;
+          scene.remove(k.mesh);
+          keysCollected++;
+          audio.playSE(600, 0.2);
+          showGameMessage(`認証の鍵を取得 (${keysCollected}/5)`);
+          updateHUD();
+
+          if (keysCollected >= 5 && !gateActivated) {
+            gateActivated = true;
+            escapeGateMesh.material.opacity = 0.75;
+            audio.playSE(880, 0.6);
+            showGameMessage("朱い鳥居の中枢セキュリティが全解除された！脱出せよ！");
+          }
+          return;
+        }
+      }
+
+      for (let mItem of memoItems) {
+        if (!mItem.collected && mItem.mesh.position.distanceTo(pPos) < 2.5) {
+          mItem.collected = true;
+          scene.remove(mItem.mesh);
+          collectedMemosCount++;
+          audio.playSE(750, 0.2);
+          openMemoModal(mItem.index);
+          updateHUD();
+          return;
+        }
+      }
+
+      for (let b of batteries) {
+        if (!b.collected && b.mesh.position.distanceTo(pPos) < 2.5) {
+          b.collected = true;
+          scene.remove(b.mesh);
+          battery = Math.min(100, battery + 35);
+          audio.playSE(900, 0.2);
+          showGameMessage("懐中電灯のバッテリーを回復した (+35%)");
+          updateHUD();
+          return;
+        }
+      }
+
+      for (let f of firecrackerItems) {
+        if (!f.collected && f.mesh.position.distanceTo(pPos) < 2.5) {
+          f.collected = true;
+          scene.remove(f.mesh);
+          firecrackers++;
+          audio.playSE(500, 0.2);
+          showGameMessage("爆竹を拾った (+1個)");
+          updateHUD();
+          return;
+        }
+      }
+
+      if (gateActivated && toriiPosition.distanceTo(pPos) < 3.5) {
+        triggerStageClear();
+      }
+    }
+
+    let activeMemoIndex = 0;
+    function openMemoModal(index) {
+      activeMemoIndex = index;
+      isPaused = true;
+      document.exitPointerLock();
+      const memo = storyMemosData[index];
+      document.getElementById('memo-modal-title').innerText = memo.title;
+      document.getElementById('memo-modal-body').innerText = memo.text;
+      document.getElementById('memo-modal').style.display = 'flex';
+    }
+
+    function closeMemoModal() {
+      document.getElementById('memo-modal').style.display = 'none';
+      isPaused = false;
+      renderer.domElement.requestPointerLock();
+    }
+
+    function toggleMemoListModal() {
+      if (!gameActive) return;
+      if (document.getElementById('memo-modal').style.display === 'flex') {
+        closeMemoModal();
+      } else if (collectedMemosCount > 0) {
+        openMemoModal(activeMemoIndex);
+      } else {
+        showGameMessage("調査記録がまだ見つかっていません [M]");
+      }
+    }
+
+    function updateHUD() {
+      document.getElementById('key-count').innerText = `${keysCollected} / 5`;
+      document.getElementById('memo-count').innerText = `${collectedMemosCount} / ${storyMemosData.length}`;
+      document.getElementById('firecracker-count').innerText = firecrackers;
+      document.getElementById('stamina-bar').style.width = `${stamina}%`;
+      document.getElementById('battery-bar').style.width = `${battery}%`;
+
+      const prompt = document.getElementById('interact-prompt');
+      let nearInteractable = false;
+      const pPos = player.position;
+
+      for (let k of keys) if (!k.collected && k.mesh.position.distanceTo(pPos) < 2.5) nearInteractable = true;
+      for (let m of memoItems) if (!m.collected && m.mesh.position.distanceTo(pPos) < 2.5) nearInteractable = true;
+      for (let b of batteries) if (!b.collected && b.mesh.position.distanceTo(pPos) < 2.5) nearInteractable = true;
+      for (let f of firecrackerItems) if (!f.collected && f.mesh.position.distanceTo(pPos) < 2.5) nearInteractable = true;
+      if (gateActivated && toriiPosition.distanceTo(pPos) < 3.5) nearInteractable = true;
+
+      prompt.style.display = nearInteractable ? 'block' : 'none';
+    }
+
+    function triggerJumpscare() {
+      gameActive = false;
+      audio.stopBGM();
       audio.playJumpscareScream();
-
+      document.exitPointerLock();
       document.getElementById('jumpscare-overlay').style.display = 'flex';
       setTimeout(() => {
         document.getElementById('jumpscare-overlay').style.display = 'none';
         document.getElementById('gameover-overlay').style.display = 'flex';
-      }, 1200);
+      }, 1500);
     }
 
-    function triggerClear() {
+    function triggerStageClear() {
+      gameActive = false;
+      audio.stopBGM();
+      audio.playClearFanfare();
+      document.exitPointerLock();
+
       if (currentLevel === 1) {
-        isPlaying = false;
-        document.exitPointerLock();
-        audio.stopBGM();
-        audio.playClearFanfare();
-        document.getElementById('next-stage-title').textContent = "STAGE 1 CLEAR";
-        document.getElementById('next-stage-desc').textContent = `記録メモ収集: ${collectedMemosCount} / ${storyMemosData.length} | Lv.2 に進みますか？`;
         document.getElementById('next-stage-overlay').style.display = 'flex';
       } else {
-        isPlaying = false;
-        document.exitPointerLock();
-        audio.stopBGM();
-        if (timerInterval) clearInterval(timerInterval);
-
-        audio.playClearFanfare();
-
-        const mins = Math.floor(playTime / 60);
-        const secs = playTime % 60;
-        document.getElementById('clear-time-text').textContent = `TIME: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        document.getElementById('clear-story-summary').textContent = `すべての記録(${collectedMemosCount}/${storyMemosData.length})を集め、街と友人の真実を暴いて生還した！`;
-        let rank = collectedMemosCount === storyMemosData.length ? 'S+' : 'A';
-        document.getElementById('clear-rank').textContent = `RANK: ${rank}`;
+        document.getElementById('clear-story-summary').innerText = "親友の足跡を辿り、死の市の中枢からすべての真実を持ち帰った！";
+        const rank = playTime < 120 ? 'RANK: S' : playTime < 240 ? 'RANK: A' : 'RANK: B';
+        document.getElementById('clear-rank').innerText = rank;
+        const min = String(Math.floor(playTime / 60)).padStart(2, '0');
+        const sec = String(playTime % 60).padStart(2, '0');
+        document.getElementById('clear-time-text').innerText = `TIME: ${min}:${sec}`;
         document.getElementById('clear-overlay').style.display = 'flex';
       }
     }
 
-    const minimapCanvas = document.getElementById('minimap-canvas');
-    const minimapCtx = minimapCanvas.getContext('2d');
+    function startLevel2() {
+      currentLevel = 2;
+      document.getElementById('next-stage-overlay').style.display = 'none';
+      monsters.push(new Monster());
+      startGame();
+    }
 
-    function updateMinimap() {
-      minimapCtx.clearRect(0, 0, 160, 160);
-      minimapCtx.save();
-      minimapCtx.translate(80, 80);
-      minimapCtx.rotate(-player.rotation.y);
-
-      minimapCtx.fillStyle = currentLevel === 2 ? '#1a0505' : '#0a0a12';
-      minimapCtx.beginPath();
-      minimapCtx.arc(0, 0, 80, 0, Math.PI * 2);
-      minimapCtx.fill();
-
-      const scale = 2.0;
-
-      minimapCtx.fillStyle = currentLevel === 2 ? '#330c0c' : '#1c222d';
-      buildingRenderData.forEach(b => {
-        const dx = (b.x - player.position.x) * scale;
-        const dz = (b.z - player.position.z) * scale;
-        minimapCtx.fillRect(dx - (b.w * scale)/2, dz - (b.d * scale)/2, b.w * scale, b.d * scale);
-      });
-
-      const tx = (toriiPosition.x - player.position.x) * scale;
-      const tz = (toriiPosition.z - player.position.z) * scale;
-      minimapCtx.fillStyle = gateActivated ? (currentLevel === 2 ? '#ff0055' : '#00ffff') : '#ff3300';
-      minimapCtx.beginPath(); minimapCtx.arc(tx, tz, 6, 0, Math.PI * 2); minimapCtx.fill();
-
-      keys.forEach(k => {
-        if (!k.collected) {
-          const kx = (k.pos.x - player.position.x) * scale;
-          const kz = (k.pos.z - player.position.z) * scale;
-          minimapCtx.fillStyle = currentLevel === 2 ? '#ff3333' : '#ffcc00';
-          minimapCtx.beginPath(); minimapCtx.arc(kx, kz, 4, 0, Math.PI * 2); minimapCtx.fill();
-        }
-      });
-
-      monsters.forEach(m => {
-        const mx = (m.pos.x - player.position.x) * scale;
-        const mz = (m.pos.z - player.position.z) * scale;
-        minimapCtx.fillStyle = currentLevel === 2 ? '#00ffff' : (m.isFast ? '#ff6600' : '#ff0000');
-        minimapCtx.beginPath(); minimapCtx.arc(mx, mz, m.isFast ? 6 : 5, 0, Math.PI * 2); minimapCtx.fill();
-      });
-
-      minimapCtx.restore();
-
-      minimapCtx.fillStyle = '#00ff88';
-      minimapCtx.beginPath(); minimapCtx.arc(80, 80, 5, 0, Math.PI * 2); minimapCtx.fill();
+    let chanceScreenOpen = false;
+    function selectChanceBox(choice) {
+      chanceScreenOpen = false;
+      document.getElementById('chance-screen').style.display = 'none';
+      const results = ["爆竹 +2個獲得！", "バッテリー全快！", "何も入っていなかった…"];
+      const res = results[Math.floor(Math.random() * results.length)];
+      if (res.includes("爆竹")) firecrackers += 2;
+      if (res.includes("バッテリー")) battery = 100;
+      showGameMessage(res);
+      updateHUD();
+      renderer.domElement.requestPointerLock();
     }
 
     const clock = new THREE.Clock();
+
     function animate() {
       requestAnimationFrame(animate);
       const delta = clock.getDelta();
 
-      if (isPlaying && !isPaused && !isChanceTime && !isMemoReading) {
-        if (battery > 0) {
-          battery -= delta * 0.4;
-          if (battery < 0) battery = 0;
-          flashlight.intensity = (battery / 100) * 4.5;
-        } else {
-          flashlight.intensity = 0.2;
-        }
-
-        const isMoving = moveF || moveB || moveL || moveR;
+      if (gameActive && !isPaused) {
+        const moveSpeed = 0.08 * (keyStates.ShiftLeft && stamina > 5 ? 1.6 : 1.0);
         
-        if (currentLevel === 1) {
-          if (isSprinting && isMoving && stamina > 0) {
-            stamina -= delta * 35;
-            if (stamina < 0) stamina = 0;
-          } else {
-            stamina += delta * 18;
-            if (stamina > 100) stamina = 100;
-          }
+        if (keyStates.ShiftLeft && stamina > 5 && (keyStates.KeyW || keyStates.KeyA || keyStates.KeyS || keyStates.KeyD)) {
+          stamina = Math.max(0, stamina - delta * 30);
         } else {
-          stamina = 100;
+          stamina = Math.min(100, stamina + delta * 20);
         }
-
-        updateUI();
-
-        let speed = 4.2;
-        if (isSprinting && isMoving && (currentLevel === 2 || stamina > 0)) speed = 6.8;
 
         const moveDir = new THREE.Vector3();
-        const camDir = new THREE.Vector3();
-        camera.getWorldDirection(camDir);
-        camDir.y = 0; camDir.normalize();
-        const sideDir = new THREE.Vector3(-camDir.z, 0, camDir.x);
+        const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.rotation.y);
+        const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.rotation.y);
 
-        if (moveF) moveDir.add(camDir);
-        if (moveB) moveDir.sub(camDir);
-        if (moveL) moveDir.sub(sideDir);
-        if (moveR) moveDir.add(sideDir);
+        if (keyStates.KeyW) moveDir.add(forward);
+        if (keyStates.KeyS) moveDir.sub(forward);
+        if (keyStates.KeyD) moveDir.add(right);
+        if (keyStates.KeyA) moveDir.sub(right);
         moveDir.normalize();
 
-        const nextX = player.position.x + moveDir.x * speed * delta;
-        const nextZ = player.position.z + moveDir.z * speed * delta;
+        const nextX = player.position.x + moveDir.x * moveSpeed;
+        const nextZ = player.position.z + moveDir.z * moveSpeed;
 
-        let collides = false;
-        const pRadius = 0.4;
-        buildingColliders.forEach(b => {
-          if (nextX + pRadius > b.minX && nextX - pRadius < b.maxX &&
-              nextZ + pRadius > b.minZ && nextZ - pRadius < b.maxZ) {
-            collides = true;
+        let collided = false;
+        for (let b of buildingColliders) {
+          if (nextX > b.minX && nextX < b.maxX && nextZ > b.minZ && nextZ < b.maxZ) {
+            collided = true;
+            break;
           }
-        });
+        }
 
-        if (!collides) {
+        if (!collided) {
           player.position.x = Math.max(MAP_LIMIT.minX, Math.min(MAP_LIMIT.maxX, nextX));
           player.position.z = Math.max(MAP_LIMIT.minZ, Math.min(MAP_LIMIT.maxZ, nextZ));
         }
 
-        let foundPrompt = false;
-        nearbyItemAction = null;
-
-        keys.forEach(k => {
-          if (!k.collected && player.position.distanceTo(k.pos) < 2.0) {
-            foundPrompt = true;
-            document.getElementById('interact-prompt').textContent = '[E] 鍵を拾う';
-            nearbyItemAction = () => {
-              k.collected = true;
-              scene.remove(k.mesh);
-              keysCount++;
-              updateUI();
-              showMsg("『鍵』を手に入れた！");
-              audio.playSE(1200, 0.3, 'sine');
-
-              if (keysCount === 4 && !fastMonsterSpawned) {
-                fastMonsterSpawned = true;
-                const fastMonster = createScaryMonster(true);
-                fastMonster.pos.set(player.position.x + 15, 0, player.position.z - 15);
-                monsters.push(fastMonster);
-                showMsg("警告：さらに凶悪な追跡者が現れた！");
-                audio.playSE(400, 0.8, 'sawtooth');
-              }
-
-              if (keysCount === 5) {
-                gateActivated = true;
-                showMsg("鳥居に脱出ゲートが出現した！鳥居へ向かえ！");
-                audio.playSE(1500, 0.6, 'triangle');
-              }
-
-              if (keysCount === 3 && Math.random() > 0.3) {
-                triggerChanceTime();
-              }
-            };
-          }
-        });
-
-        // ストーリーメモの判定
-        memoItems.forEach(m => {
-          if (!m.collected && player.position.distanceTo(m.pos) < 2.0) {
-            foundPrompt = true;
-            document.getElementById('interact-prompt').textContent = '[E] 記録のメモを読む';
-            nearbyItemAction = () => {
-              m.collected = true;
-              scene.remove(m.mesh);
-              collectedMemosCount++;
-              document.getElementById('memo-count').textContent = `${collectedMemosCount} / ${storyMemosData.length}`;
-              audio.playSE(1000, 0.2, 'triangle');
-              openMemoModal(m.id);
-            };
-          }
-        });
-
-        batteries.forEach(b => {
-          if (!b.collected && player.position.distanceTo(b.pos) < 2.0) {
-            foundPrompt = true;
-            document.getElementById('interact-prompt').textContent = '[E] バッテリーを拾う';
-            nearbyItemAction = () => {
-              b.collected = true;
-              scene.remove(b.mesh);
-              battery = Math.min(100, battery + 35);
-              updateUI();
-              showMsg("バッテリーを回収した！");
-              audio.playSE(800, 0.2, 'triangle');
-            };
-          }
-        });
-
-        firecrackerItems.forEach(fc => {
-          if (!fc.collected && player.position.distanceTo(fc.pos) < 2.0) {
-            foundPrompt = true;
-            document.getElementById('interact-prompt').textContent = '[E] 爆竹を拾う';
-            nearbyItemAction = () => {
-              fc.collected = true;
-              scene.remove(fc.mesh);
-              firecrackers++;
-              updateUI();
-              showMsg("爆竹を手に入れた！ [F]で投擲");
-              audio.playSE(600, 0.2, 'square');
-            };
-          }
-        });
-
-        if (gateActivated && player.position.distanceTo(toriiPosition) < 3.0) {
-          triggerClear();
+        if (flashlightOn) {
+          battery = Math.max(0, battery - delta * 0.6);
+          flashlight.intensity = Math.max(0.5, (battery / 100) * 4.5);
+          if (battery <= 0 && Math.random() < 0.02) audio.playHeartbeat();
         }
 
-        if (gateActivated && escapeGateMesh) {
-          escapeGateMesh.material.opacity = 0.5 + Math.sin(Date.now() * 0.008) * 0.3;
-        }
-
-        document.getElementById('interact-prompt').style.display = foundPrompt ? 'block' : 'none';
-
-        monsters.forEach(m => {
-          if (m.isStunned) {
-            m.stunTimer -= delta;
-            if (m.stunTimer <= 0) m.isStunned = false;
-            return;
-          }
-
-          let mSpeed = m.baseSpeed * diffParams.speedMult;
-          if (currentLevel === 2) mSpeed *= 1.25;
-
-          const toPlayer = new THREE.Vector3().subVectors(player.position, m.pos);
-          const dist = toPlayer.length();
-
-          let detectDist = (m.isFast ? 35 : 25) * diffParams.detectMult;
-          if (currentLevel === 2) detectDist *= 1.3;
-
-          if (dist < detectDist) {
-            toPlayer.y = 0; toPlayer.normalize();
-            m.pos.addScaledVector(toPlayer, mSpeed * delta);
-            m.group.lookAt(player.position.x, m.pos.y, player.position.z);
-
-            if (dist < 10 && Math.random() < 0.02) {
-              audio.playHeartbeat();
-            }
-          }
-
-          if (dist < 2.5) {
-            triggerGameOver();
-          }
-        });
-
-        if (revealEnemiesTimer > 0) {
-          revealEnemiesTimer -= delta;
-        }
-
-        updateMinimap();
+        monsters.forEach(m => m.update(delta));
+        updateHUD();
       }
 
       renderer.render(scene, camera);
     }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
     animate();
   </script>
